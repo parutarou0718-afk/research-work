@@ -1,0 +1,20 @@
+Research Work
+
+This project is a modified fork of LLM Wiki.
+
+Original project:
+https://github.com/nashsu/llm_wiki
+
+Original license:
+GPL-3.0
+
+The original LLM Wiki project provides the desktop application foundation,
+including source ingestion, Markdown Wiki generation, search, knowledge graph,
+review workflows, local persistence, and related tooling.
+
+This fork adds research workflow features including submission management,
+idea capture, quick capture, and bidirectional knowledge linking.
+
+The modified source code is distributed under GPL-3.0 in accordance with the
+original project license.
+
