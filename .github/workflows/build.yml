@@ -1,7 +1,11 @@
 name: Build & Release
 
 on:
+  # Tagged pushes publish a real GitHub Release. Branch pushes and manual
+  # runs only upload workflow artifacts for testing.
   push:
+    branches:
+      - feature/submission-management
     tags:
       - 'v*'
   workflow_dispatch:
@@ -38,6 +42,7 @@ jobs:
       CARGO_HTTP_MULTIPLEXING: "false"
       CARGO_NET_RETRY: "5"
       CARGO_HTTP_TIMEOUT: "60"
+      IS_RELEASE_TAG: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}
 
     steps:
       - name: Checkout
@@ -120,12 +125,12 @@ jobs:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         with:
           # Tag-triggered runs publish a real GitHub Release.
-          # Manual (workflow_dispatch) runs leave tagName/releaseName
+          # Branch/manual runs leave tagName/releaseName
           # empty so tauri-action skips the release-upload step and
           # just produces bundle artifacts — useful for testing a
           # branch build without polluting the Releases page.
-          tagName: ${{ github.event_name == 'push' && github.ref_name || '' }}
-          releaseName: ${{ github.event_name == 'push' && format('LLM Wiki {0}', github.ref_name) || '' }}
+          tagName: ${{ env.IS_RELEASE_TAG == 'true' && github.ref_name || '' }}
+          releaseName: ${{ env.IS_RELEASE_TAG == 'true' && format('LLM Wiki {0}', github.ref_name) || '' }}
           releaseBody: 'See the assets below for download links.'
           releaseDraft: false
           prerelease: false
@@ -139,20 +144,20 @@ jobs:
           .github/scripts/package-windows-portable.ps1 -Version $version
 
       - name: Attach Windows portable zip to release
-        if: github.event_name == 'push' && matrix.platform == 'windows-latest'
+        if: env.IS_RELEASE_TAG == 'true' && matrix.platform == 'windows-latest'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: pwsh
         run: |
           gh release upload "${{ github.ref_name }}" dist-portable/*.zip --clobber
 
-      # On workflow_dispatch, no release is created, so the bundles
+      # On workflow_dispatch / branch pushes, no release is created, so the bundles
       # would otherwise be discarded with the runner. Upload them as
       # workflow artifacts so the maintainer can `gh run download`
       # the .msi / .exe / .dmg / .deb to test locally. Skipped on
       # tag pushes since the release page already has them.
-      - name: Upload bundles as workflow artifacts (manual runs only)
-        if: github.event_name == 'workflow_dispatch'
+      - name: Upload bundles as workflow artifacts (non-release runs only)
+        if: env.IS_RELEASE_TAG != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: bundle-${{ matrix.platform }}
@@ -173,8 +178,8 @@ jobs:
     name: Package browser extension
     needs: build
     # Browser extension is only published as part of an actual
-    # tagged release; manual builds don't need it.
-    if: github.event_name == 'push'
+    # tagged release; branch/manual builds don't need it.
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
