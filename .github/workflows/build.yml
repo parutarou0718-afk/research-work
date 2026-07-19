@@ -22,17 +22,25 @@ jobs:
           - platform: macos-latest
             args: '--target aarch64-apple-darwin'
             rust_target: aarch64-apple-darwin
+            artifact: macos-arm64
+          - platform: macos-13
+            args: '--target x86_64-apple-darwin'
+            rust_target: x86_64-apple-darwin
+            artifact: macos-intel
           - platform: ubuntu-22.04
             args: ''
             rust_target: ''
+            artifact: ubuntu-x64
           # GitHub-hosted ARM Linux runner (free for public repos
           # since 2024). Native build — no cross-compile of webkit2gtk.
           - platform: ubuntu-22.04-arm
             args: ''
             rust_target: ''
+            artifact: ubuntu-arm64
           - platform: windows-latest
             args: ''
             rust_target: ''
+            artifact: windows-x64
 
     runs-on: ${{ matrix.platform }}
     env:
@@ -56,7 +64,8 @@ jobs:
       - name: Rust cache
         uses: Swatinem/rust-cache@v2
         with:
-          workspaces: src-tauri
+          workspaces: |
+            src-tauri -> target
 
       - name: Install protoc (macOS)
         if: startsWith(matrix.platform, 'macos-')
@@ -117,12 +126,6 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
-          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         with:
           # Tag-triggered runs publish a real GitHub Release.
           # Branch/manual runs leave tagName/releaseName
@@ -160,7 +163,7 @@ jobs:
         if: env.IS_RELEASE_TAG != 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: bundle-${{ matrix.platform }}
+          name: bundle-${{ matrix.artifact }}
           # Glob covers both targeted (e.g.
           # target/aarch64-apple-darwin/release/...) and default
           # (target/release/...) build paths.
