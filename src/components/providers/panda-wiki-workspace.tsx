@@ -7,6 +7,9 @@ import { ProviderSettings } from "@/components/settings/ProviderSettings"
 import { useWikiStore } from "@/stores/wiki-store"
 import type { ProviderBundle } from "@/services/providers/contracts/ProviderBundle"
 import type { FileTreeNode } from "@/types/wiki"
+import { PandaWikiAskPanel } from "./panda-wiki-ask-panel"
+import { createTauriPandaWikiChatCredentialStore } from "@/services/providers/pandawiki/chat/PandaWikiChatCredentialStore"
+import { loadPandaWikiChatConfig, savePandaWikiChatConfig, type PandaWikiChatConfig } from "@/services/providers/pandawiki/chat/PandaWikiChatConfig"
 
 interface PandaWikiWorkspaceProps {
   provider: ProviderBundle
@@ -26,11 +29,52 @@ export function PandaWikiWorkspace({ provider, serverUrl, account, onLogout }: P
   const loadNode = useWikiStore((state) => state.loadProviderNode)
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
   const [nodeError, setNodeError] = useState<string | null>(null)
+  const [chatConfig, setChatConfig] = useState<PandaWikiChatConfig>({ endpointUrl: "", model: "knowledge-base", timeoutSeconds: 90, providerName: "pandawiki" })
+  const [chatTokenExists, setChatTokenExists] = useState(false)
+  const [chatBusy, setChatBusy] = useState(false)
   const selectedNode = selectedNodeId ? nodesById[selectedNodeId] : undefined
 
   useEffect(() => {
     void loadKnowledge(provider.knowledge)
   }, [loadKnowledge, provider.knowledge])
+
+  useEffect(() => {
+    let active = true
+    void (async () => {
+      const config = await loadPandaWikiChatConfig()
+      if (!active) return
+      setChatConfig(config)
+      if (config.endpointUrl) setChatTokenExists(await createTauriPandaWikiChatCredentialStore().hasToken(config.endpointUrl))
+    })()
+    return () => { active = false }
+  }, [])
+
+  const saveChatConfig = async (nextConfig: PandaWikiChatConfig) => {
+    setChatBusy(true)
+    try {
+      const saved = await savePandaWikiChatConfig(nextConfig)
+      setChatConfig(saved)
+      setChatTokenExists(saved.endpointUrl ? await createTauriPandaWikiChatCredentialStore().hasToken(saved.endpointUrl) : false)
+    } finally { setChatBusy(false) }
+  }
+
+  const saveChatToken = async (endpointUrl: string, token: string) => {
+    if (!endpointUrl) throw new Error("Save a complete endpoint URL before saving a token.")
+    setChatBusy(true)
+    try {
+      await createTauriPandaWikiChatCredentialStore().saveToken(endpointUrl, token)
+      setChatTokenExists(true)
+    } finally { setChatBusy(false) }
+  }
+
+  const clearChatToken = async () => {
+    if (!chatConfig.endpointUrl) return
+    setChatBusy(true)
+    try {
+      await createTauriPandaWikiChatCredentialStore().clearToken(chatConfig.endpointUrl)
+      setChatTokenExists(false)
+    } finally { setChatBusy(false) }
+  }
 
   const selectNode = async (nodeId: string) => {
     setSelectedNodeId(nodeId)
@@ -53,6 +97,12 @@ export function PandaWikiWorkspace({ provider, serverUrl, account, onLogout }: P
             connected
             account={account}
             onLogout={onLogout}
+            chatConfig={chatConfig}
+            chatTokenExists={chatTokenExists}
+            chatBusy={chatBusy}
+            onSaveChatConfig={saveChatConfig}
+            onSaveChatToken={saveChatToken}
+            onClearChatToken={clearChatToken}
           />
         </div>
         <div className="flex min-h-0 flex-1 flex-col border-t">
@@ -94,6 +144,7 @@ export function PandaWikiWorkspace({ provider, serverUrl, account, onLogout }: P
           </article>
         )}
       </section>
+      <PandaWikiAskPanel config={chatConfig} />
     </main>
   )
 }

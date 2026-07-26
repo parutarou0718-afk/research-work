@@ -166,6 +166,29 @@ The fork does not replace the original ingest, search, graph, review, or chat sy
 
 ## Development
 
+## PandaWiki knowledge-base chat (LAN V1)
+
+When the PandaWiki provider is enabled, the provider settings panel can configure
+an OpenAI-compatible **complete endpoint URL**, for example:
+
+```text
+https://wiki.example/share/v1/chat/completions
+```
+
+The model defaults to `knowledge-base`. The desktop client sends a standard
+non-streaming OpenAI request with `messages` and `stream: false`; it never sends
+`X-KB-ID`.
+
+The PandaWiki **chat API token** is separate from the PandaWiki login session.
+It is stored in Windows Credential Manager and is read only by the Rust desktop
+layer, which also makes the HTTPS request. The token is never written to
+`app-state.json`, returned to TypeScript, or logged.
+
+For HTTPS to work, Windows must trust the issuing CA **and** the URL host or IP
+must appear in the certificate's Subject Alternative Name. The application does
+not disable TLS verification. A future proxy may use `/v1/chat/completions`; the
+complete endpoint URL avoids any UI or application-layer change.
+
 Install dependencies:
 
 ```bash

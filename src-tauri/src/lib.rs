@@ -4,6 +4,7 @@ mod clip_server;
 mod commands;
 mod cors;
 mod panic_guard;
+mod pandawiki_chat;
 mod proxy;
 mod server_bind;
 mod tray;
@@ -691,6 +692,10 @@ pub fn run() {
             commands::file_sync::ignore_file_change_task,
             set_proxy_env,
             set_close_behavior,
+            pandawiki_chat::save_pandawiki_chat_token,
+            pandawiki_chat::clear_pandawiki_chat_token,
+            pandawiki_chat::has_pandawiki_chat_token,
+            pandawiki_chat::complete_pandawiki_chat,
         ])
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
