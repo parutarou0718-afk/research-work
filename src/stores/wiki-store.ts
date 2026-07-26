@@ -1,5 +1,6 @@
 import { create } from "zustand"
-import type { WikiProject, FileNode } from "@/types/wiki"
+import type { FileTreeModel, FileNode, KnowledgeModel, NodeModel, WikiProject } from "@/types/wiki"
+import type { KnowledgeProvider } from "@/services/providers/contracts/KnowledgeProvider"
 import { DEFAULT_SOURCE_WATCH_CONFIG } from "@/lib/source-watch-config"
 import {
   buildProjectPathIndexFromTree,
@@ -419,6 +420,13 @@ interface WikiState {
   generalConfig: GeneralConfig
   graphUiState: GraphUiState
   dataVersion: number
+  /** Provider-scoped state: mapped domain models only, never PandaWiki DTOs. */
+  providerKnowledgeBases: KnowledgeModel[]
+  activeProviderKnowledgeBaseId: string | null
+  providerFileTree: FileTreeModel | null
+  providerNodesById: Record<string, NodeModel>
+  providerKnowledgeStatus: "idle" | "loading" | "ready" | "error"
+  providerKnowledgeError: string | null
 
   setProject: (project: WikiProject | null) => void
   setFileTree: (tree: FileNode[], options?: { syncPathIndex?: boolean }) => void
@@ -451,6 +459,9 @@ interface WikiState {
   setGraphUiState: (state: GraphUiState | ((current: GraphUiState) => GraphUiState)) => void
   resetGraphUiState: () => void
   bumpDataVersion: () => void
+  loadProviderKnowledge: (provider: KnowledgeProvider) => Promise<void>
+  loadProviderNode: (provider: KnowledgeProvider, nodeId: string) => Promise<NodeModel>
+  clearProviderKnowledge: () => void
 }
 
 export const useWikiStore = create<WikiState>((set) => ({
@@ -501,6 +512,12 @@ export const useWikiStore = create<WikiState>((set) => ({
   },
 
   dataVersion: 0,
+  providerKnowledgeBases: [],
+  activeProviderKnowledgeBaseId: null,
+  providerFileTree: null,
+  providerNodesById: {},
+  providerKnowledgeStatus: "idle",
+  providerKnowledgeError: null,
 
   setProject: (project) => set({ project }),
   setFileTree: (fileTree, options) => {
@@ -665,6 +682,43 @@ export const useWikiStore = create<WikiState>((set) => ({
     })),
   resetGraphUiState: () => set({ graphUiState: createDefaultGraphUiState() }),
   bumpDataVersion: () => set((state) => ({ dataVersion: state.dataVersion + 1 })),
+  loadProviderKnowledge: async (provider) => {
+    set({ providerKnowledgeStatus: "loading", providerKnowledgeError: null })
+    try {
+      const knowledgeBases = await provider.listKnowledgeBases()
+      const tree = knowledgeBases.length > 0 ? await provider.getNodeTree() : null
+      set({
+        providerKnowledgeBases: knowledgeBases,
+        activeProviderKnowledgeBaseId: tree?.knowledgeBaseId ?? knowledgeBases[0]?.id ?? null,
+        providerFileTree: tree,
+        providerNodesById: {},
+        providerKnowledgeStatus: "ready",
+        providerKnowledgeError: null,
+      })
+    } catch {
+      set({
+        providerKnowledgeBases: [],
+        activeProviderKnowledgeBaseId: null,
+        providerFileTree: null,
+        providerNodesById: {},
+        providerKnowledgeStatus: "error",
+        providerKnowledgeError: "Unable to load PandaWiki knowledge.",
+      })
+    }
+  },
+  loadProviderNode: async (provider, nodeId) => {
+    const node = await provider.getNode(nodeId)
+    set((state) => ({ providerNodesById: { ...state.providerNodesById, [node.id]: node } }))
+    return node
+  },
+  clearProviderKnowledge: () => set({
+    providerKnowledgeBases: [],
+    activeProviderKnowledgeBaseId: null,
+    providerFileTree: null,
+    providerNodesById: {},
+    providerKnowledgeStatus: "idle",
+    providerKnowledgeError: null,
+  }),
 }))
 
 export type { WikiState, LlmConfig, SearchApiConfig, EmbeddingConfig, MultimodalConfig, OutputLanguage, ProxyConfig, ScheduledImportConfig, SourceWatchConfig, ApiConfig }

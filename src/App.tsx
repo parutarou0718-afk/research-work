@@ -18,7 +18,14 @@ import { startClipWatcher } from "@/lib/clip-watcher"
 import { AppLayout } from "@/components/layout/app-layout"
 import { WelcomeScreen } from "@/components/project/welcome-screen"
 import { CreateProjectDialog } from "@/components/project/create-project-dialog"
-import type { WikiProject } from "@/types/wiki"
+import { ProviderLogin } from "@/components/auth/ProviderLogin"
+import { PandaWikiWorkspace } from "@/components/providers/panda-wiki-workspace"
+import providerDeploymentConfig from "@/config/providers.json"
+import { createPandaWikiProvider } from "@/services/providers/pandawiki/PandaWikiProvider"
+import type { AuthSession, LoginInput, WikiProject } from "@/types/wiki"
+
+const pandaWikiDeployment = providerDeploymentConfig.providers.pandawiki
+const requiresPandaWikiLogin = providerDeploymentConfig.defaultProvider === "pandawiki" && pandaWikiDeployment.enabled
 
 function applyDocumentZoom(level: number) {
   document.documentElement.style.fontSize = `${BASE_FONT_SIZE_PX * level}px`
@@ -33,6 +40,10 @@ function App() {
   const zoomLevel = useZoomStore((s) => s.level)
   const [showCreateDialog, setShowCreateDialog] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [pandaProvider] = useState(() => createPandaWikiProvider({ baseUrl: pandaWikiDeployment.baseUrl }))
+  const [providerSession, setProviderSession] = useState<AuthSession | null>(null)
+  const [providerConnectionError, setProviderConnectionError] = useState<string | null>(null)
+  const [providerServerUrl, setProviderServerUrl] = useState(pandaWikiDeployment.baseUrl)
 
   function isCurrentProject(proj: WikiProject): boolean {
     const current = useWikiStore.getState().project
@@ -293,6 +304,18 @@ function App() {
   // Auto-open last project on startup
   useEffect(() => {
     async function init() {
+      if (requiresPandaWikiLogin) {
+        try {
+          await pandaProvider.lifecycle.initialize()
+          setProviderSession(pandaProvider.auth.getSession())
+          setProviderConnectionError(null)
+        } catch {
+          setProviderConnectionError("Unable to reach the configured PandaWiki server.")
+        } finally {
+          setLoading(false)
+        }
+        return
+      }
       try {
         const savedZoom = await loadZoomLevel()
         applyDocumentZoom(savedZoom)
@@ -416,7 +439,20 @@ function App() {
       }
     }
     init()
-  }, [])
+  }, [pandaProvider])
+
+  async function handleProviderLogin(credentials: LoginInput) {
+    const session = await pandaProvider.auth.login(credentials)
+    setProviderServerUrl(credentials.serverUrl)
+    setProviderSession(session)
+    setProviderConnectionError(null)
+  }
+
+  async function handleProviderLogout() {
+    await pandaProvider.auth.logout()
+    useWikiStore.getState().clearProviderKnowledge()
+    setProviderSession(null)
+  }
 
   async function handleProjectOpened(proj: WikiProject) {
     // Flush the OUTGOING project's review/lint/chat state to disk and suspend
@@ -593,6 +629,27 @@ function App() {
       <div className="flex h-full items-center justify-center bg-background text-muted-foreground">
         Loading...
       </div>
+    )
+  }
+
+  if (requiresPandaWikiLogin && !providerSession) {
+    return (
+      <ProviderLogin
+        defaultServerUrl={providerServerUrl}
+        onLogin={handleProviderLogin}
+        connectionError={providerConnectionError}
+      />
+    )
+  }
+
+  if (requiresPandaWikiLogin && providerSession) {
+    return (
+      <PandaWikiWorkspace
+        provider={pandaProvider}
+        serverUrl={providerServerUrl}
+        account={providerSession.user.account}
+        onLogout={handleProviderLogout}
+      />
     )
   }
 
