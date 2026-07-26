@@ -3,7 +3,7 @@
   "allowProviderSwitch": false,
   "providers": {
     "pandawiki": {
-      "baseUrl": "http://192.168.0.176:2444",
+      "baseUrl": "https://pandawiki.docs.baizhi.cloud:2444",
       "enabled": true
     }
   }

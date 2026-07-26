@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import type { LoginInput } from "@/types/wiki"
+import { PandaWikiApiError } from "@/services/providers/pandawiki/api/client"
 
 interface ProviderLoginProps {
   defaultServerUrl: string
@@ -25,6 +26,19 @@ export function validateProviderLoginInput(input: LoginInput): string | null {
   return null
 }
 
+function loginErrorMessage(error: unknown): string {
+  if (!(error instanceof PandaWikiApiError)) return "Unable to sign in because the PandaWiki client failed unexpectedly."
+  switch (error.kind) {
+    case "bad-request": return "PandaWiki rejected this login request. Check the account and server address."
+    case "unauthorized": return "The PandaWiki account or password is incorrect."
+    case "forbidden": return "This account is not allowed to sign in to PandaWiki."
+    case "tls": return "The PandaWiki TLS certificate is not trusted or does not match the server address."
+    case "network": return "PandaWiki could not be reached. Check the server address and network connection."
+    case "invalid-response": return "PandaWiki returned an unexpected login response."
+    default: return "PandaWiki returned a server error while signing in."
+  }
+}
+
 export function ProviderLogin({ defaultServerUrl, onLogin, connectionError = null }: ProviderLoginProps) {
   const [serverUrl, setServerUrl] = useState(defaultServerUrl)
   const [account, setAccount] = useState("")
@@ -45,8 +59,8 @@ export function ProviderLogin({ defaultServerUrl, onLogin, connectionError = nul
     setError(null)
     try {
       await onLogin(input)
-    } catch {
-      setError("Unable to sign in. Check the server address and credentials, then try again.")
+    } catch (error) {
+      setError(loginErrorMessage(error))
     } finally {
       setSubmitting(false)
     }

@@ -1,6 +1,14 @@
 import { getHttpFetch } from "@/lib/tauri-fetch"
 
-export type PandaWikiErrorKind = "unauthorized" | "forbidden" | "not-found" | "network" | "server" | "invalid-response"
+export type PandaWikiErrorKind = "bad-request" | "unauthorized" | "forbidden" | "not-found" | "tls" | "network" | "server" | "invalid-response"
+
+export interface PandaWikiRequestDiagnostic {
+  phase: "request" | "response" | "error"
+  origin: string
+  path: string
+  status?: number
+  errorKind?: PandaWikiErrorKind
+}
 
 export class PandaWikiApiError extends Error {
   constructor(
@@ -21,24 +29,46 @@ interface PandaWikiEnvelope<T> {
 
 type Fetcher = typeof globalThis.fetch
 
-function normalizeBaseUrl(baseUrl: string): string {
-  return baseUrl.replace(/\/+$/, "")
+export function normalizePandaWikiServerAddress(serverAddress: string): string {
+  const url = new URL(serverAddress.trim())
+  if (url.protocol !== "http:" && url.protocol !== "https:") throw new Error("PandaWiki server must use HTTP or HTTPS")
+  // A login provider is configured with a server origin, not an API endpoint.
+  // Keeping the supplied protocol prevents accidental HTTPS-to-HTTP downgrade.
+  if (url.pathname !== "/" || url.search || url.hash) throw new Error("PandaWiki server address must not contain a path, query, or fragment")
+  return url.origin
 }
 
 function toErrorKind(status: number, code?: number): PandaWikiErrorKind {
+  if (status === 400) return "bad-request"
   if (status === 401 || code === 40003) return "unauthorized"
   if (status === 403) return "forbidden"
   if (status === 404 || code === 40004) return "not-found"
   return "server"
 }
 
+function isTlsFailure(error: unknown): boolean {
+  const message = error instanceof Error ? error.message.toLowerCase() : ""
+  return message.includes("certificate") || message.includes("ssl") || message.includes("tls")
+}
+
+function defaultDiagnostic(diagnostic: PandaWikiRequestDiagnostic): void {
+  // Deliberately no request body, Authorization header, credentials, or response payload.
+  console.info("[pandawiki-login]", diagnostic)
+}
+
 export class PandaWikiClient {
   private accessToken: string | null = null
+  private readonly baseUrl: string
+  private readonly diagnostic: (diagnostic: PandaWikiRequestDiagnostic) => void
 
   constructor(
-    private readonly baseUrl: string,
+    baseUrl: string,
     private readonly fetcher: Fetcher,
-  ) {}
+    diagnostic: (diagnostic: PandaWikiRequestDiagnostic) => void = defaultDiagnostic,
+  ) {
+    this.baseUrl = normalizePandaWikiServerAddress(baseUrl)
+    this.diagnostic = diagnostic
+  }
 
   static async create(baseUrl: string): Promise<PandaWikiClient> {
     return new PandaWikiClient(baseUrl, await getHttpFetch())
@@ -67,10 +97,16 @@ export class PandaWikiClient {
 
     let response: Response
     try {
-      response = await this.fetcher(`${normalizeBaseUrl(this.baseUrl)}${path}`, { ...init, headers })
-    } catch {
-      throw new PandaWikiApiError("network", 0)
+      const url = new URL(path, `${this.baseUrl}/`)
+      this.diagnostic({ phase: "request", origin: url.origin, path: url.pathname })
+      response = await this.fetcher(url.toString(), { ...init, headers })
+    } catch (error) {
+      const kind = isTlsFailure(error) ? "tls" : "network"
+      this.diagnostic({ phase: "error", origin: this.baseUrl, path, errorKind: kind })
+      throw new PandaWikiApiError(kind, 0)
     }
+
+    this.diagnostic({ phase: "response", origin: this.baseUrl, path, status: response.status })
 
     let envelope: PandaWikiEnvelope<T> | null = null
     try {
