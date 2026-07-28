@@ -10,16 +10,17 @@ Date: 2026-07-28
 | Knowledge-base list | `api/knowledge-api.ts` | `/api/v1/knowledge_base/list` | Implemented |
 | Knowledge navigation | `api/node-api.ts` | `/api/v1/node/list/group/nav?kb_id=...` | Implemented |
 | Node detail | `api/node-api.ts` | `/api/v1/node/detail?kb_id=...&id=...` | Implemented |
+| Knowledge-base chat | `PandaWikiOpenAIConversationProvider` through a Rust command | `/share/v1/chat/completions` | Implemented, non-streaming |
 | Provider workspace | `components/providers/panda-wiki-workspace.tsx` | Above APIs | Implemented |
 
 ## Declared but not yet wired end-to-end
 
 | Capability | Current code | Status |
 |---|---|---|
-| OpenAI-compatible RAG chat | PandaWiki service endpoint has been verified separately | Main `ChatPanel` does not yet use a ConversationProvider adapter |
+| Main local-project ChatPanel replacement | PandaWiki chat is intentionally a separate panel in the PandaWiki workspace | Not wired: the local ChatPanel assumes local project, local tools and local conversation persistence |
 | Conversation history/SSE | DTO and Mapper exist | No complete API adapter or UI routing |
 | Document upload/status | DTO and Mapper exist | No complete API adapter or UI routing |
-| Search | Capability flag is `true` | No complete API adapter or UI routing |
+| Search | Capability flag is `false` | No verified server-backed search adapter or response contract |
 | Graph/entities/relations | DTO and Mapper skeleton exists; capability flag is `false` | Not implemented |
 
 Capability flags must reflect adapters that are actually callable, rather than planned features.
@@ -66,8 +67,7 @@ The server must filter by `group_ids` before returning entities, relations, sear
 
 ## Next integration order
 
-1. Correct capability flags to match completed adapters.
-2. Add a `ConversationProvider` adapter for PandaWiki OpenAI-compatible chat with citations.
-3. Add document upload/status adapter.
-4. Add a server-backed search adapter.
-5. Only then add a graph/entity capability with permission-safe provenance.
+1. Add a server-backed search adapter with result/citation DTOs.
+2. Add document upload/status adapter after its PandaWiki API contract is verified.
+3. Add conversation history and SSE only after a compatible server contract is confirmed.
+4. Only then add a graph/entity capability with permission-safe provenance.
