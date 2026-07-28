@@ -9,6 +9,7 @@ import {
 } from "@/lib/wiki-page-resolver"
 import { DEFAULT_GRAPH_FILTERS, type GraphFilterState } from "@/lib/graph-filters"
 import type { OutputLanguage } from "@/lib/output-language-options"
+import { createLocalProject, type Project } from "@/domain/projects"
 
 /**
  * Wire protocol used when `provider === "custom"`. Other providers have a
@@ -429,7 +430,11 @@ interface WikiState {
   providerKnowledgeStatus: "idle" | "loading" | "ready" | "error"
   providerKnowledgeError: string | null
 
+  /** Active workspace identity. `project` remains the legacy local-only slot. */
+  activeProject: Project | null
+
   setProject: (project: WikiProject | null) => void
+  setActiveProject: (project: Project | null) => void
   setFileTree: (tree: FileNode[], options?: { syncPathIndex?: boolean }) => void
   setProjectPathIndexFromTree: (tree: FileNode[]) => void
   setSelectedFile: (path: string | null) => void
@@ -521,8 +526,18 @@ export const useWikiStore = create<WikiState>((set) => ({
   providerNodesById: {},
   providerKnowledgeStatus: "idle",
   providerKnowledgeError: null,
+  activeProject: null,
 
-  setProject: (project) => set({ project }),
+  setProject: (project) => set({
+    project,
+    activeProject: project ? createLocalProject(project.id, project.name, project.path) : null,
+  }),
+  setActiveProject: (activeProject) => set({
+    activeProject,
+    project: activeProject?.source === "local"
+      ? activeProject
+      : null,
+  }),
   setFileTree: (fileTree, options) => {
     if (options?.syncPathIndex === false) {
       set({ fileTree })

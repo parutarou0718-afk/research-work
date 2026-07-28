@@ -9,10 +9,18 @@ import { LintView } from "@/components/lint/lint-view"
 import { SearchView } from "@/components/search/search-view"
 import { GraphView } from "@/components/graph/graph-view"
 import { usePlugins } from "@/core/plugins/usePlugins"
+import { isPandaWikiProject } from "@/domain/projects"
+import { isViewAvailable } from "@/lib/project-capabilities"
 import { PreviewPanel } from "./preview-panel"
+import { RemoteProjectHome } from "./remote-project-home"
 
 export function ContentArea() {
   const activeView = useWikiStore((s) => s.activeView)
+  const activeProject = useWikiStore((s) => s.activeProject)
+
+  if (isPandaWikiProject(activeProject) && !isViewAvailable(activeProject, activeView)) {
+    return <RemoteProjectHome project={activeProject} />
+  }
 
   // Keep SourcesView mounted after its first visit. Opening a source uses the
   // full-width wiki preview, and unmounting the source tree here would discard
@@ -46,12 +54,15 @@ function ActiveContent({
   activeView: ReturnType<typeof useWikiStore.getState>["activeView"]
 }) {
   const activePluginRoute = useWikiStore((s) => s.activePluginRoute)
+  const activeProject = useWikiStore((s) => s.activeProject)
   const { getPluginByRoute, host } = usePlugins()
   switch (activeView) {
     case "chat":
       return <ChatPanel />
     case "wiki":
-      return <PreviewPanel />
+      return isPandaWikiProject(activeProject)
+        ? <RemoteProjectHome project={activeProject} />
+        : <PreviewPanel />
     case "settings":
       return <SettingsView />
     case "skills":

@@ -8,8 +8,8 @@ import type { KnowledgeModel } from "@/types/wiki"
 
 export const PANDAWIKI_PROJECT_CAPABILITIES: ProjectCapabilities = {
   readKnowledge: true,
-  search: true,
-  chat: true,
+  search: false,
+  chat: false,
   editNode: false,
   upload: false,
   conversationHistory: false,

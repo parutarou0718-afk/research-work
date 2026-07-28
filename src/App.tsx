@@ -17,21 +17,32 @@ import { AppLayout } from "@/components/layout/app-layout"
 import { WelcomeScreen } from "@/components/project/welcome-screen"
 import { CreateProjectDialog } from "@/components/project/create-project-dialog"
 import { ProviderLogin } from "@/components/auth/ProviderLogin"
-import { PandaWikiWorkspace } from "@/components/providers/panda-wiki-workspace"
 import providerDeploymentConfig from "@/config/providers.json"
 import { createPandaWikiProvider } from "@/services/providers/pandawiki/PandaWikiProvider"
 import type { AuthSession, LoginInput, WikiProject } from "@/types/wiki"
+import { isLocalProject, type Project } from "@/domain/projects"
+import { mapKnowledgeBaseToVirtualProject } from "@/services/providers/pandawiki/PandaWikiVirtualProject"
+import { usePandaWikiWorkspaceStore } from "@/stores/pandawiki-workspace-store"
 
 const pandaWikiDeployment = providerDeploymentConfig.providers.pandawiki
 const requiresPandaWikiLogin = providerDeploymentConfig.defaultProvider === "pandawiki" && pandaWikiDeployment.enabled
+
+function connectionIdFromServerUrl(serverUrl: string): string {
+  try {
+    return new URL(serverUrl).origin
+  } catch {
+    return serverUrl.replace(/\/+$/, "")
+  }
+}
 
 function applyDocumentZoom(level: number) {
   document.documentElement.style.fontSize = `${BASE_FONT_SIZE_PX * level}px`
 }
 
 function App() {
-  const project = useWikiStore((s) => s.project)
+  const activeProject = useWikiStore((s) => s.activeProject)
   const setProject = useWikiStore((s) => s.setProject)
+  const setActiveProject = useWikiStore((s) => s.setActiveProject)
   const setFileTree = useWikiStore((s) => s.setFileTree)
   const setSelectedFile = useWikiStore((s) => s.setSelectedFile)
   const setActiveView = useWikiStore((s) => s.setActiveView)
@@ -42,6 +53,11 @@ function App() {
   const [providerSession, setProviderSession] = useState<AuthSession | null>(null)
   const [providerConnectionError, setProviderConnectionError] = useState<string | null>(null)
   const [providerServerUrl, setProviderServerUrl] = useState(pandaWikiDeployment.baseUrl)
+  const pandaWikiProjects = usePandaWikiWorkspaceStore((s) => s.projects)
+  const setPandaWikiProjects = usePandaWikiWorkspaceStore((s) => s.setProjects)
+  const setPandaWikiScope = usePandaWikiWorkspaceStore((s) => s.setActiveScope)
+  const [pandaWikiProjectsLoading, setPandaWikiProjectsLoading] = useState(false)
+  const [pandaWikiProjectsError, setPandaWikiProjectsError] = useState<string | null>(null)
 
   function isCurrentProject(proj: WikiProject): boolean {
     const current = useWikiStore.getState().project
@@ -434,11 +450,30 @@ function App() {
     setProviderConnectionError(null)
   }
 
-  async function handleProviderLogout() {
-    await pandaProvider.auth.logout()
-    useWikiStore.getState().clearProviderKnowledge()
-    setProviderSession(null)
-  }
+  useEffect(() => {
+    if (!requiresPandaWikiLogin || !providerSession) return
+    let cancelled = false
+    setPandaWikiProjectsLoading(true)
+    setPandaWikiProjectsError(null)
+    void pandaProvider.knowledge.listKnowledgeBases()
+      .then((knowledgeBases) => {
+        if (cancelled) return
+        const connectionId = connectionIdFromServerUrl(providerServerUrl)
+        setPandaWikiProjects(knowledgeBases.map((knowledgeBase) =>
+          mapKnowledgeBaseToVirtualProject(connectionId, knowledgeBase),
+        ))
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setPandaWikiProjects([])
+          setPandaWikiProjectsError("Unable to load PandaWiki knowledge bases.")
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setPandaWikiProjectsLoading(false)
+      })
+    return () => { cancelled = true }
+  }, [pandaProvider, providerServerUrl, providerSession, setPandaWikiProjects])
 
   async function handleProjectOpened(proj: WikiProject) {
     // Flush the OUTGOING project's review/lint/chat state to disk and suspend
@@ -567,6 +602,26 @@ function App() {
     }
   }
 
+  async function handlePandaWikiProjectOpened(proj: Extract<Project, { source: "pandawiki" }>) {
+    const { resetProjectState } = await import("@/lib/reset-project-state")
+    await resetProjectState()
+    useWikiStore.getState().clearProviderKnowledge()
+    setProject(null)
+    setActiveProject(proj)
+    setPandaWikiScope(proj.scopeKey)
+    setSelectedFile(null)
+    setFileTree([])
+    setActiveView("wiki")
+  }
+
+  async function handleSelectProject(proj: Project) {
+    if (isLocalProject(proj)) {
+      await handleSelectRecent(proj)
+      return
+    }
+    await handlePandaWikiProjectOpened(proj)
+  }
+
   async function handleOpenProject() {
     const selected = await open({
       directory: true,
@@ -606,6 +661,8 @@ function App() {
     const { resetProjectState } = await import("@/lib/reset-project-state")
     await resetProjectState()
     setProject(null)
+    setActiveProject(null)
+    setPandaWikiScope(null)
     setFileTree([])
     setSelectedFile(null)
   }
@@ -628,24 +685,16 @@ function App() {
     )
   }
 
-  if (requiresPandaWikiLogin && providerSession) {
-    return (
-      <PandaWikiWorkspace
-        provider={pandaProvider}
-        serverUrl={providerServerUrl}
-        account={providerSession.user.account}
-        onLogout={handleProviderLogout}
-      />
-    )
-  }
-
-  if (!project) {
+  if (!activeProject) {
     return (
       <>
         <WelcomeScreen
           onCreateProject={() => setShowCreateDialog(true)}
           onOpenProject={handleOpenProject}
-          onSelectProject={handleSelectRecent}
+          onSelectProject={handleSelectProject}
+          pandaWikiProjects={pandaWikiProjects}
+          pandaWikiProjectsLoading={pandaWikiProjectsLoading}
+          pandaWikiProjectsError={pandaWikiProjectsError}
         />
         <CreateProjectDialog
           open={showCreateDialog}

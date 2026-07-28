@@ -3,6 +3,8 @@ import { useTranslation } from "react-i18next"
 import { PanelLeftClose } from "lucide-react"
 import { KnowledgeTree } from "./knowledge-tree"
 import { FileTree } from "./file-tree"
+import { useWikiStore } from "@/stores/wiki-store"
+import { isPandaWikiProject } from "@/domain/projects"
 
 interface SidebarPanelProps {
   onCollapse?: () => void
@@ -10,7 +12,16 @@ interface SidebarPanelProps {
 
 export function SidebarPanel({ onCollapse }: SidebarPanelProps) {
   const { t } = useTranslation()
+  const activeProject = useWikiStore((s) => s.activeProject)
   const [mode, setMode] = useState<"knowledge" | "files">("knowledge")
+
+  if (isPandaWikiProject(activeProject)) {
+    return (
+      <div className="flex h-full flex-col p-4 text-sm text-muted-foreground">
+        PandaWiki nodes will appear here when the remote knowledge-tree adapter is connected.
+      </div>
+    )
+  }
 
   return (
     <div className="flex h-full flex-col">

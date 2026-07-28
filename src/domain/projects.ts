@@ -64,12 +64,22 @@ export function buildProviderScopeKey(
   return `${connectionId}:${knowledgeBaseId}`
 }
 
-export function isLocalProject(project: Project): project is LocalProject {
-  return project.source === "local"
+export function createLocalProject(id: string, name: string, path: string): LocalProject {
+  return {
+    id,
+    source: "local",
+    name,
+    path,
+    capabilities: { ...LOCAL_PROJECT_CAPABILITIES },
+  }
 }
 
-export function isPandaWikiProject(project: Project): project is PandaWikiVirtualProject {
-  return project.source === "pandawiki"
+export function isLocalProject(project: Project | null): project is LocalProject {
+  return project?.source === "local"
+}
+
+export function isPandaWikiProject(project: Project | null): project is PandaWikiVirtualProject {
+  return project?.source === "pandawiki"
 }
 
 export function requireLocalProject(project: Project, operation: string): LocalProject {

@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest"
 import { useWikiStore } from "./wiki-store"
+import type { PandaWikiVirtualProject } from "@/domain/projects"
 
 describe("wiki preview store actions", () => {
   beforeEach(() => {
@@ -12,6 +13,26 @@ describe("wiki preview store actions", () => {
       externalPreview: null,
       previewReturnView: null,
     })
+  })
+
+  it("keeps a PandaWiki virtual project out of the legacy local-project slot", () => {
+    const remote: PandaWikiVirtualProject = {
+      id: "pandawiki:server:kb-1",
+      source: "pandawiki",
+      name: "Remote KB",
+      connectionId: "server",
+      knowledgeBaseId: "kb-1",
+      scopeKey: "server:kb-1",
+      capabilities: {
+        readKnowledge: true, search: true, chat: true, editNode: false,
+        upload: false, conversationHistory: false, graph: false, filesystem: false,
+      },
+    }
+
+    useWikiStore.getState().setActiveProject(remote)
+
+    expect(useWikiStore.getState().activeProject).toEqual(remote)
+    expect(useWikiStore.getState().project).toBeNull()
   })
 
   it("keeps the project path index in sync when setting the file tree", () => {

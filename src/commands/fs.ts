@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core"
 import type { FileNode } from "@/types/wiki"
-import { LOCAL_PROJECT_CAPABILITIES, type LocalProject } from "@/domain/projects"
+import { createLocalProject, type LocalProject } from "@/domain/projects"
 import { ensureProjectId, upsertProjectInfo } from "@/lib/project-identity"
 import { isAbsolutePath } from "@/lib/path-utils"
 
@@ -223,14 +223,14 @@ export async function createProject(
   const raw = await invoke<RawProject>("create_project", { name, path })
   const id = await ensureProjectId(raw.path)
   await upsertProjectInfo(id, raw.path, raw.name)
-  return { id, source: "local", name: raw.name, path: raw.path, capabilities: LOCAL_PROJECT_CAPABILITIES }
+  return createLocalProject(id, raw.name, raw.path)
 }
 
 export async function openProject(path: string): Promise<LocalProject> {
   const raw = await invoke<RawProject>("open_project", { path })
   const id = await ensureProjectId(raw.path)
   await upsertProjectInfo(id, raw.path, raw.name)
-  return { id, source: "local", name: raw.name, path: raw.path, capabilities: LOCAL_PROJECT_CAPABILITIES }
+  return createLocalProject(id, raw.name, raw.path)
 }
 
 export async function openProjectFolder(path: string): Promise<void> {

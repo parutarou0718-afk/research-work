@@ -12,6 +12,7 @@ import { usePlugins } from "@/core/plugins/usePlugins"
 import { useTranslation } from "react-i18next"
 import logoImg from "@/assets/logo.jpg"
 import type { WikiState } from "@/stores/wiki-store"
+import { isViewAvailable } from "@/lib/project-capabilities"
 import {
   isResearchPanelVisible,
   nextResearchPanelNavState,
@@ -37,6 +38,7 @@ interface IconSidebarProps {
 export function IconSidebar({ onSwitchProject, onNewIdea }: IconSidebarProps) {
   const { t } = useTranslation()
   const activeView = useWikiStore((s) => s.activeView)
+  const activeProject = useWikiStore((s) => s.activeProject)
   const setActiveView = useWikiStore((s) => s.setActiveView)
   const pendingCount = useReviewStore((s) => s.items.filter((i) => !i.resolved).length)
   const researchPanelOpen = useResearchStore((s) => s.panelOpen)
@@ -89,7 +91,7 @@ export function IconSidebar({ onSwitchProject, onNewIdea }: IconSidebarProps) {
         </div>
         {/* Top: main nav items + Deep Research */}
         <div className="flex flex-1 flex-col items-center gap-1">
-          {NAV_ITEMS.map(({ view, icon: Icon, labelKey }) => (
+          {NAV_ITEMS.filter(({ view }) => isViewAvailable(activeProject, view)).map(({ view, icon: Icon, labelKey }) => (
             <Tooltip key={view}>
               <TooltipTrigger
                 onClick={() => setActiveView(view)}
@@ -131,6 +133,7 @@ export function IconSidebar({ onSwitchProject, onNewIdea }: IconSidebarProps) {
             )
           })}
           {/* Deep Research — same row as other nav items */}
+          {activeProject?.source !== "pandawiki" && <>
           <Tooltip>
             <TooltipTrigger
               onClick={handleResearchPanelToggle}
@@ -171,6 +174,7 @@ export function IconSidebar({ onSwitchProject, onNewIdea }: IconSidebarProps) {
             </TooltipTrigger>
             <TooltipContent side="right">{t("nav.skills")}</TooltipContent>
           </Tooltip>
+          </>}
         </div>
         {/* Bottom: daemon status + settings + switch project */}
         <div className="flex flex-col items-center gap-1 pb-1">

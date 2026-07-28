@@ -2,19 +2,27 @@ import { useEffect, useState } from "react"
 import { FolderOpen, Plus, Clock, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { getRecentProjects, removeFromRecentProjects } from "@/lib/project-store"
-import type { WikiProject } from "@/types/wiki"
+import type { PandaWikiVirtualProject, Project, WikiProject } from "@/types/wiki"
+import { createLocalProject } from "@/domain/projects"
 import { useTranslation } from "react-i18next"
+import { PandaWikiProjectList } from "./pandawiki-project-list"
 
 interface WelcomeScreenProps {
   onCreateProject: () => void
   onOpenProject: () => void
-  onSelectProject: (project: WikiProject) => void
+  onSelectProject: (project: Project) => void
+  pandaWikiProjects?: PandaWikiVirtualProject[]
+  pandaWikiProjectsLoading?: boolean
+  pandaWikiProjectsError?: string | null
 }
 
 export function WelcomeScreen({
   onCreateProject,
   onOpenProject,
   onSelectProject,
+  pandaWikiProjects = [],
+  pandaWikiProjectsLoading = false,
+  pandaWikiProjectsError = null,
 }: WelcomeScreenProps) {
   const { t } = useTranslation()
   const [recentProjects, setRecentProjects] = useState<WikiProject[]>([])
@@ -61,7 +69,7 @@ export function WelcomeScreen({
               {recentProjects.map((proj) => (
                 <button
                   key={proj.path}
-                  onClick={() => onSelectProject(proj)}
+                  onClick={() => onSelectProject(createLocalProject(proj.id, proj.name, proj.path))}
                   className="group flex w-full items-center justify-between border-b px-4 py-3 text-left transition-colors last:border-b-0 hover:bg-accent"
                 >
                   <div className="min-w-0 flex-1">
@@ -85,6 +93,14 @@ export function WelcomeScreen({
               ))}
             </div>
           </div>
+        )}
+        {(pandaWikiProjectsLoading || pandaWikiProjectsError || pandaWikiProjects.length > 0) && (
+          <PandaWikiProjectList
+            projects={pandaWikiProjects}
+            loading={pandaWikiProjectsLoading}
+            error={pandaWikiProjectsError}
+            onSelectProject={onSelectProject}
+          />
         )}
       </div>
     </div>
