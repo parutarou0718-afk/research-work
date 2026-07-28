@@ -49,4 +49,16 @@ describe("PandaWiki authentication provider", () => {
     await expect(provider.knowledge.getNodeTree()).resolves.toMatchObject({ knowledgeBaseId: "kb-1", roots: [{ id: "node-1", name: "Overview" }] })
     await expect(provider.knowledge.getNode("node-1")).resolves.toMatchObject({ id: "node-1", knowledgeBaseId: "kb-1", content: "# Overview" })
   })
+
+  it("advertises only capabilities backed by a callable client adapter", () => {
+    const provider = createPandaWikiProvider({ baseUrl: "https://wiki.example", createGateway: async () => createGateway() })
+    expect(provider.capabilities).toMatchObject({
+      auth: true,
+      documents: false,
+      conversations: false,
+      search: false,
+      graph: false,
+      templates: false,
+    })
+  })
 })

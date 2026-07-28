@@ -1,24 +1,13 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest"
-import { realFs, createTempProject, readFileRaw, writeFileRaw, fileExists } from "@/test-helpers/fs-temp"
+import { beforeEach, describe, expect, it } from "vitest"
+import type { PluginStorage } from "@/core/plugins/host/types"
 import type { Submission } from "../domain/submission"
-
-const mocks = vi.hoisted(() => ({
-  writeFileAtomic: vi.fn(),
-}))
-
-vi.mock("@/commands/fs", () => ({
-  ...realFs,
-  writeFileAtomic: mocks.writeFileAtomic,
-}))
-
 import {
-  loadSubmissions,
+  configureSubmissionStorage,
   hasSavedSubmissions,
+  loadSubmissions,
   saveSubmissions,
   SUBMISSIONS_FILE_NAME,
 } from "./submission-persist"
-
-let tmp: { path: string; cleanup: () => Promise<void> }
 
 function makeSubmission(overrides: Partial<Submission> = {}): Submission {
   return {
@@ -43,67 +32,52 @@ function makeSubmission(overrides: Partial<Submission> = {}): Submission {
   }
 }
 
-beforeEach(async () => {
-  tmp = await createTempProject("submissions")
-  mocks.writeFileAtomic.mockReset()
-  mocks.writeFileAtomic.mockImplementation(realFs.writeFile)
-})
+function createStorage() {
+  const current = new Map<string, unknown>()
+  const legacy = new Map<string, unknown>()
+  const storage: PluginStorage = {
+    exists: async (name) => current.has(name),
+    readJson: async <T,>(name: string) => current.get(name) as T | null ?? null,
+    writeJson: async <T,>(name: string, value: T) => { current.set(name, value) },
+    readLegacyJson: async <T,>(name: string) => legacy.get(name) as T | null ?? null,
+  }
+  return { storage, current, legacy }
+}
 
-afterEach(async () => {
-  await tmp.cleanup()
-})
+describe("submission plugin persistence", () => {
+  let state: ReturnType<typeof createStorage>
 
-describe("submission persistence", () => {
-  it("returns an empty list when submissions.json does not exist", async () => {
-    await expect(loadSubmissions(tmp.path)).resolves.toEqual([])
+  beforeEach(() => {
+    state = createStorage()
+    configureSubmissionStorage(state.storage)
+  })
+
+  it("uses namespaced plugin storage for new submission data", async () => {
+    const items = [makeSubmission()]
+    await saveSubmissions(items)
+
+    expect(state.current.get(SUBMISSIONS_FILE_NAME)).toMatchObject({ version: 1, items })
+    await expect(loadSubmissions()).resolves.toEqual(items)
   })
 
   it("detects historical submissions without hydrating a Store", async () => {
-    await saveSubmissions(tmp.path, [makeSubmission()])
-    await expect(hasSavedSubmissions(tmp.path)).resolves.toBe(true)
+    await saveSubmissions([makeSubmission()])
+    await expect(hasSavedSubmissions()).resolves.toBe(true)
   })
 
-  it("saves and loads submissions from .llm-wiki/submissions.json", async () => {
-    const items = [
-      makeSubmission({ id: "a", paperPath: "wiki/a.md", paperTitle: "A" }),
-      makeSubmission({ id: "b", paperPath: "wiki/b.md", paperTitle: "B", status: "under_review" }),
-    ]
+  it("imports the legacy submissions envelope once without deleting it", async () => {
+    const items = [makeSubmission({ id: "legacy" })]
+    state.legacy.set("submissions.json", { version: 1, items })
 
-    await saveSubmissions(tmp.path, items)
-    await expect(loadSubmissions(tmp.path)).resolves.toEqual(items)
-    expect(await fileExists(`${tmp.path}/.llm-wiki/${SUBMISSIONS_FILE_NAME}`)).toBe(true)
+    await expect(loadSubmissions()).resolves.toEqual(items)
+    expect(state.current.get(SUBMISSIONS_FILE_NAME)).toMatchObject({ version: 1, items })
+    expect(state.legacy.get("submissions.json")).toMatchObject({ version: 1, items })
   })
 
-  it("does not overwrite a corrupt submissions.json while loading", async () => {
-    const path = `${tmp.path}/.llm-wiki/${SUBMISSIONS_FILE_NAME}`
-    await writeFileRaw(path, "{not valid json")
+  it("does not write when a legacy envelope is malformed", async () => {
+    state.legacy.set("submissions.json", { version: 2, items: [] })
 
-    await expect(loadSubmissions(tmp.path)).resolves.toEqual([])
-    await expect(readFileRaw(path)).resolves.toBe("{not valid json")
-  })
-
-  it("does not overwrite an empty submissions.json while loading", async () => {
-    const path = `${tmp.path}/.llm-wiki/${SUBMISSIONS_FILE_NAME}`
-    await writeFileRaw(path, "")
-
-    await expect(loadSubmissions(tmp.path)).resolves.toEqual([])
-    await expect(readFileRaw(path)).resolves.toBe("")
-  })
-
-  it("uses the submissions file path and preserves project-relative paper paths", async () => {
-    const item = makeSubmission({
-      paperPath: "wiki/papers/project-relative.md",
-    })
-
-    await saveSubmissions(tmp.path, [item])
-
-    const raw = await readFileRaw(`${tmp.path}/.llm-wiki/${SUBMISSIONS_FILE_NAME}`)
-    expect(raw).toContain('"version": 1')
-    expect(raw).toContain('"paperPath": "wiki/papers/project-relative.md"')
-    expect(raw).not.toContain(`${tmp.path}/wiki/papers/project-relative.md`)
-    expect(mocks.writeFileAtomic).toHaveBeenCalledWith(
-      `${tmp.path}/.llm-wiki/${SUBMISSIONS_FILE_NAME}`,
-      expect.any(String),
-    )
+    await expect(loadSubmissions()).resolves.toEqual([])
+    expect(state.current.has(SUBMISSIONS_FILE_NAME)).toBe(false)
   })
 })

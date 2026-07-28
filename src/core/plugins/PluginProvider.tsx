@@ -2,6 +2,7 @@ import { createContext, useEffect, useMemo, useState, type ReactNode } from "rea
 import { PluginRegistry } from "./PluginRegistry"
 import { builtinPlugins } from "./builtinPlugins"
 import { useWikiStore } from "@/stores/wiki-store"
+import { createDefaultPluginHost } from "./host/PluginHost"
 import type {
   LlmWikiPlugin,
   PluginDataRecoveryDecision,
@@ -21,15 +22,17 @@ export interface PluginContextValue {
   resolvePluginDataRecovery: (id: PluginId, decision: PluginDataRecoveryDecision) => Promise<void>
   isPluginEnabled: (id: PluginId) => boolean
   getPluginByRoute: (route: string) => LlmWikiPlugin | undefined
+  host: import("./host/types").PluginHost
 }
 
 export const PluginContext = createContext<PluginContextValue | null>(null)
 
 export function PluginProvider({ children }: { children: ReactNode }) {
   const projectPath = useWikiStore((state) => state.project?.path ?? null)
+  const [host] = useState(createDefaultPluginHost)
   const [registry] = useState(() => {
     const next = new PluginRegistry()
-    builtinPlugins.forEach((plugin) => next.register(plugin))
+    builtinPlugins.forEach((createPlugin) => next.register(createPlugin(host)))
     return next
   })
   const [version, setVersion] = useState(0)
@@ -66,7 +69,8 @@ export function PluginProvider({ children }: { children: ReactNode }) {
     getPluginByRoute: (route) => registry.getEnabledPlugins().find((plugin) =>
       (plugin.navigationItems ?? []).some((item) => item.route === route),
     ),
-  }), [registry, version])
+    host,
+  }), [host, registry, version])
 
   return <PluginContext.Provider value={value}>{children}</PluginContext.Provider>
 }

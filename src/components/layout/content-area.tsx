@@ -46,7 +46,7 @@ function ActiveContent({
   activeView: ReturnType<typeof useWikiStore.getState>["activeView"]
 }) {
   const activePluginRoute = useWikiStore((s) => s.activePluginRoute)
-  const { getPluginByRoute } = usePlugins()
+  const { getPluginByRoute, host } = usePlugins()
   switch (activeView) {
     case "chat":
       return <ChatPanel />
@@ -69,7 +69,7 @@ function ActiveContent({
     case "plugin": {
       const plugin = activePluginRoute ? getPluginByRoute(activePluginRoute) : undefined
       const PluginPage = plugin?.page
-      return PluginPage ? <PluginPage /> : <PreviewPanel />
+      return PluginPage ? <PluginPage host={host} /> : <PreviewPanel />
     }
     default:
       return <PreviewPanel />

@@ -1,16 +1,14 @@
 import { Send } from "lucide-react"
-import { useWikiStore } from "@/stores/wiki-store"
+import type { PluginHost } from "@/core/plugins/host/types"
 import type { LlmWikiPlugin } from "@/core/plugins/types"
-import { hasSavedSubmissions } from "./persistence/submission-persist"
+import { configureSubmissionStorage, hasSavedSubmissions } from "./persistence/submission-persist"
 import { useSubmissionStore } from "./store/submission-store"
 import { submissionManagementManifest } from "./manifest"
 import { SubmissionManagementPage } from "./SubmissionManagementPage"
 
-function currentProjectPath(): string | null {
-  return useWikiStore.getState().project?.path ?? null
-}
-
-export const submissionManagementPlugin: LlmWikiPlugin = {
+export function createSubmissionManagementPlugin(host: PluginHost): LlmWikiPlugin {
+  configureSubmissionStorage(host.storage.forPlugin(submissionManagementManifest.id))
+  return {
   manifest: submissionManagementManifest,
   navigationItems: [
     {
@@ -23,15 +21,12 @@ export const submissionManagementPlugin: LlmWikiPlugin = {
   ],
   page: SubmissionManagementPage,
   dataRecovery: {
-    hasHistoricalData: async () => {
-      const projectPath = currentProjectPath()
-      return projectPath ? hasSavedSubmissions(projectPath) : false
-    },
+    hasHistoricalData: async () => host.project.current() ? hasSavedSubmissions() : false,
     restore: async () => {
-      const projectPath = currentProjectPath()
-      if (projectPath) await useSubmissionStore.getState().hydrate(projectPath)
+      if (host.project.current()) await useSubmissionStore.getState().hydrate()
     },
     defer: () => useSubmissionStore.getState().reset(),
     clearRuntimeData: () => useSubmissionStore.getState().reset(),
   },
+  }
 }

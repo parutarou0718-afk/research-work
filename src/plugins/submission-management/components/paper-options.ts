@@ -1,4 +1,3 @@
-import type { FileNode } from "@/types/wiki"
 import { parseFrontmatter } from "@/lib/frontmatter"
 import { getFileStem, getRelativePath, normalizePath } from "@/lib/path-utils"
 
@@ -45,25 +44,6 @@ function isSelectableSourceFile(path: string): boolean {
   return SOURCE_PAPER_EXTENSIONS.has(extensionOf(normalized))
 }
 
-function flattenFiles(nodes: FileNode[], predicate: (path: string, name: string) => boolean): string[] {
-  const out: string[] = []
-  for (const node of nodes) {
-    if (node.is_dir) {
-      out.push(...flattenFiles(node.children ?? [], predicate))
-    } else if (predicate(node.path, node.name)) {
-      out.push(normalizePath(node.path))
-    }
-  }
-  return out
-}
-
-function flattenMarkdownFiles(nodes: FileNode[]): string[] {
-  return flattenFiles(nodes, (_path, name) => name.toLowerCase().endsWith(".md"))
-}
-
-function flattenSelectableSourceFiles(nodes: FileNode[]): string[] {
-  return flattenFiles(nodes, (path) => isSelectableSourceFile(path))
-}
 
 function titleFromMarkdown(path: string, content: string): string {
   const parsed = parseFrontmatter(content)
@@ -79,23 +59,19 @@ function isPaperMarkdown(content: string): boolean {
 
 export function buildPaperOptionsFromFiles(
   projectPath: string,
-  fileTree: FileNode[],
+  markdownPaths: string[],
   files: MarkdownFileCandidate[],
-  indexedSourcePaths: string[] = [],
+  sourcePaths: string[] = [],
 ): PaperOption[] {
-  const markdownPaths = new Set(flattenMarkdownFiles(fileTree))
-  const sourcePaths = [
-    ...flattenSelectableSourceFiles(fileTree),
-    ...indexedSourcePaths.filter(isSelectableSourceFile),
-  ]
+  const markdownPathSet = new Set(markdownPaths.map(normalizePath))
   const candidates = files
-    .filter((file) => markdownPaths.has(normalizePath(file.path)))
+    .filter((file) => markdownPathSet.has(normalizePath(file.path)))
     .map((file) => ({
       path: getRelativePath(normalizePath(file.path), normalizePath(projectPath)),
       title: titleFromMarkdown(file.path, file.content),
       isPaperTyped: isPaperMarkdown(file.content),
     }))
-  const sourceCandidates = sourcePaths.map((path) => ({
+  const sourceCandidates = sourcePaths.filter(isSelectableSourceFile).map((path) => ({
     path: getRelativePath(normalizePath(path), normalizePath(projectPath)),
     title: getFileStem(path),
     isPaperTyped: false,
@@ -108,8 +84,4 @@ export function buildPaperOptionsFromFiles(
     deduped.set(option.path, option)
   }
   return [...deduped.values()].sort((a, b) => a.title.localeCompare(b.title))
-}
-
-export function markdownPathsFromFileTree(fileTree: FileNode[]): string[] {
-  return flattenMarkdownFiles(fileTree).sort((a, b) => a.localeCompare(b))
 }

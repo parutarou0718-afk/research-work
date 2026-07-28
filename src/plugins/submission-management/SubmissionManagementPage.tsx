@@ -1,10 +1,11 @@
 import { Button } from "@/components/ui/button"
 import { usePlugins } from "@/core/plugins/usePlugins"
+import type { PluginPageProps } from "@/core/plugins/host/types"
 import { SubmissionsView } from "./components/submissions-view"
 
 const PLUGIN_ID = "official.submission-management"
 
-export function SubmissionManagementPage() {
+export function SubmissionManagementPage({ host }: PluginPageProps) {
   const { getPluginDataRecoveryState, resolvePluginDataRecovery } = usePlugins()
   const recoveryState = getPluginDataRecoveryState(PLUGIN_ID)
 
@@ -33,5 +34,5 @@ export function SubmissionManagementPage() {
     )
   }
 
-  return <SubmissionsView />
+  return <SubmissionsView host={host} />
 }

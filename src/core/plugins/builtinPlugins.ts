@@ -1,4 +1,4 @@
-import { submissionManagementPlugin } from "@/plugins/submission-management"
-import type { LlmWikiPlugin } from "./types"
+import { createSubmissionManagementPlugin } from "@/plugins/submission-management"
+import type { BuiltinPluginDefinition } from "./types"
 
-export const builtinPlugins: LlmWikiPlugin[] = [submissionManagementPlugin]
+export const builtinPlugins: BuiltinPluginDefinition[] = [createSubmissionManagementPlugin]

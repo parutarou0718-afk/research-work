@@ -1,22 +1,23 @@
-import { createDirectory, readFile, writeFileAtomic } from "@/commands/fs"
-import { normalizePath } from "@/lib/path-utils"
+import type { PluginStorage } from "@/core/plugins/host/types"
 import { isSubmissionStatus, type Submission } from "../domain/submission"
 
-export const SUBMISSIONS_FILE_NAME = "submissions.json"
+export const SUBMISSIONS_FILE_NAME = "storage.json"
+const LEGACY_SUBMISSIONS_FILE_NAME = "submissions.json"
 
 interface PersistedSubmissions {
   version: 1
   items: Submission[]
 }
 
-function submissionsFilePath(projectPath: string): string {
-  const pp = normalizePath(projectPath)
-  return `${pp}/.llm-wiki/${SUBMISSIONS_FILE_NAME}`
+let storage: PluginStorage | null = null
+
+export function configureSubmissionStorage(nextStorage: PluginStorage): void {
+  storage = nextStorage
 }
 
-async function ensureSubmissionsDir(projectPath: string): Promise<void> {
-  const pp = normalizePath(projectPath)
-  await createDirectory(`${pp}/.llm-wiki`).catch(() => {})
+function getStorage(): PluginStorage {
+  if (!storage) throw new Error("Submission plugin storage has not been configured.")
+  return storage
 }
 
 function normalizeNullableString(value: unknown): string | null {
@@ -36,17 +37,13 @@ function normalizeSubmission(value: unknown): Submission | null {
   const raw = value as Record<string, unknown>
   if (typeof raw.id !== "string" || !raw.id.trim()) return null
   if (typeof raw.paperPath !== "string" || !raw.paperPath.trim()) return null
-  if (normalizePath(raw.paperPath).match(/^[A-Za-z]:\//) || normalizePath(raw.paperPath).startsWith("//")) {
-    return null
-  }
   if (!isSubmissionStatus(raw.status)) return null
   const currentRound = typeof raw.currentRound === "number" && Number.isInteger(raw.currentRound)
     ? raw.currentRound
     : 1
-
   return {
     id: raw.id,
-    paperPath: normalizePath(raw.paperPath),
+    paperPath: raw.paperPath.replace(/\\\\/g, "/"),
     paperTitle: normalizeString(raw.paperTitle),
     journalName: normalizeString(raw.journalName),
     manuscriptId: normalizeString(raw.manuscriptId),
@@ -65,33 +62,31 @@ function normalizeSubmission(value: unknown): Submission | null {
   }
 }
 
-export async function loadSubmissions(projectPath: string): Promise<Submission[]> {
-  try {
-    const content = await readFile(submissionsFilePath(projectPath))
-    if (!content.trim()) return []
-    const parsed = JSON.parse(content) as Partial<PersistedSubmissions>
-    if (parsed.version !== 1 || !Array.isArray(parsed.items)) return []
-    return parsed.items
-      .map(normalizeSubmission)
-      .filter((item): item is Submission => item !== null)
-  } catch {
-    return []
-  }
+function normalizePersisted(value: PersistedSubmissions | null): Submission[] {
+  if (!value || value.version !== 1 || !Array.isArray(value.items)) return []
+  return value.items.map(normalizeSubmission).filter((item): item is Submission => item !== null)
 }
 
-/** Reads only the persisted envelope; it never hydrates the plugin Store. */
-export async function hasSavedSubmissions(projectPath: string): Promise<boolean> {
-  return (await loadSubmissions(projectPath)).length > 0
+export async function loadSubmissions(): Promise<Submission[]> {
+  const pluginStorage = getStorage()
+  const current = await pluginStorage.readJson<PersistedSubmissions>(SUBMISSIONS_FILE_NAME)
+  if (current) return normalizePersisted(current)
+
+  const legacy = await pluginStorage.readLegacyJson<PersistedSubmissions>(LEGACY_SUBMISSIONS_FILE_NAME)
+  if (!legacy) return []
+  const items = normalizePersisted(legacy)
+  if (items.length > 0) await saveSubmissions(items)
+  return items
 }
 
-export async function saveSubmissions(projectPath: string, items: Submission[]): Promise<void> {
-  await ensureSubmissionsDir(projectPath)
+export async function hasSavedSubmissions(): Promise<boolean> {
+  return (await loadSubmissions()).length > 0
+}
+
+export async function saveSubmissions(items: Submission[]): Promise<void> {
   const data: PersistedSubmissions = {
     version: 1,
-    items: items.map((item) => ({
-      ...item,
-      paperPath: normalizePath(item.paperPath),
-    })),
+    items: items.map((item) => ({ ...item, paperPath: item.paperPath.replace(/\\\\/g, "/") })),
   }
-  await writeFileAtomic(submissionsFilePath(projectPath), JSON.stringify(data, null, 2))
+  await getStorage().writeJson(SUBMISSIONS_FILE_NAME, data)
 }

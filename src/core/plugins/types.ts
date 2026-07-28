@@ -1,4 +1,5 @@
 import type { ComponentType } from "react"
+import type { PluginHost, PluginPageProps } from "./host/types"
 
 export type PluginId = string
 
@@ -44,8 +45,10 @@ export interface LlmWikiPlugin {
   manifest: PluginManifest
   navigationItems?: PluginNavigationItem[]
   commands?: PluginCommand[]
-  page?: ComponentType
+  page?: ComponentType<PluginPageProps>
   activate?: () => void | Promise<void>
   deactivate?: () => void | Promise<void>
   dataRecovery?: PluginDataRecovery
 }
+
+export type BuiltinPluginDefinition = (host: PluginHost) => LlmWikiPlugin

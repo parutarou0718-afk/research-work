@@ -46,18 +46,18 @@ beforeEach(() => {
 })
 
 describe("submission store", () => {
-  it("hydrates submissions for a project", async () => {
+  it("hydrates submissions from configured plugin storage", async () => {
     const existing = [makeSubmission({ id: "existing" })]
     mocks.loadSubmissions.mockResolvedValue(existing)
 
-    await useSubmissionStore.getState().hydrate("/project")
+    await useSubmissionStore.getState().hydrate()
 
-    expect(mocks.loadSubmissions).toHaveBeenCalledWith("/project")
+    expect(mocks.loadSubmissions).toHaveBeenCalledOnce()
     expect(useSubmissionStore.getState().items).toEqual(existing)
   })
 
   it("creates a submission with a created event and persists it", async () => {
-    const created = await useSubmissionStore.getState().create("/project", {
+    const created = await useSubmissionStore.getState().create({
       paperPath: "wiki/paper.md",
       paperTitle: "Paper",
       journalName: "Journal",
@@ -82,7 +82,7 @@ describe("submission store", () => {
       timestamp: Date.parse("2026-07-19T12:00:00Z"),
     })
     expect(useSubmissionStore.getState().items).toEqual([created])
-    expect(mocks.saveSubmissions).toHaveBeenCalledWith("/project", [created])
+    expect(mocks.saveSubmissions).toHaveBeenCalledWith([created])
   })
 
   it("updates a submission and appends status_changed when status changes", async () => {
@@ -90,7 +90,7 @@ describe("submission store", () => {
       items: [makeSubmission({ id: "s1", status: "submitted", events: [] })],
     })
 
-    const updated = await useSubmissionStore.getState().update("/project", "s1", {
+    const updated = await useSubmissionStore.getState().update("s1", {
       status: "under_review",
       notes: "Editor assigned reviewers",
     })
@@ -102,7 +102,7 @@ describe("submission store", () => {
       fromStatus: "submitted",
       toStatus: "under_review",
     })
-    expect(mocks.saveSubmissions).toHaveBeenCalledWith("/project", [updated])
+    expect(mocks.saveSubmissions).toHaveBeenCalledWith([updated])
   })
 
   it("does not append status_changed when status is unchanged", async () => {
@@ -110,7 +110,7 @@ describe("submission store", () => {
       items: [makeSubmission({ id: "s1", status: "submitted", events: [] })],
     })
 
-    const updated = await useSubmissionStore.getState().update("/project", "s1", {
+    const updated = await useSubmissionStore.getState().update("s1", {
       journalName: "New Journal",
       status: "submitted",
     })
@@ -125,10 +125,10 @@ describe("submission store", () => {
     const remove = makeSubmission({ id: "remove", paperPath: "wiki/remove.md" })
     useSubmissionStore.setState({ items: [keep, remove] })
 
-    await useSubmissionStore.getState().delete("/project", "remove")
+    await useSubmissionStore.getState().delete("remove")
 
     expect(useSubmissionStore.getState().items).toEqual([keep])
-    expect(mocks.saveSubmissions).toHaveBeenCalledWith("/project", [keep])
+    expect(mocks.saveSubmissions).toHaveBeenCalledWith([keep])
   })
 
   it("reset clears in-memory submissions", () => {

@@ -12,10 +12,10 @@ interface SubmissionState {
   items: Submission[]
   loading: boolean
   error: string | null
-  hydrate: (projectPath: string) => Promise<void>
-  create: (projectPath: string, input: CreateSubmissionInput) => Promise<Submission>
-  update: (projectPath: string, id: string, patch: UpdateSubmissionInput) => Promise<Submission>
-  delete: (projectPath: string, id: string) => Promise<void>
+  hydrate: () => Promise<void>
+  create: (input: CreateSubmissionInput) => Promise<Submission>
+  update: (id: string, patch: UpdateSubmissionInput) => Promise<Submission>
+  delete: (id: string) => Promise<void>
   reset: () => void
 }
 
@@ -48,17 +48,17 @@ export const useSubmissionStore = create<SubmissionState>((set, get) => ({
   loading: false,
   error: null,
 
-  hydrate: async (projectPath) => {
+  hydrate: async () => {
     set({ loading: true, error: null })
     try {
-      const items = await loadSubmissions(projectPath)
+      const items = await loadSubmissions()
       set({ items, loading: false })
     } catch (err) {
       set({ loading: false, error: err instanceof Error ? err.message : String(err) })
     }
   },
 
-  create: async (projectPath, input) => {
+  create: async (input) => {
     const now = Date.now()
     const submission: Submission = {
       ...input,
@@ -76,11 +76,11 @@ export const useSubmissionStore = create<SubmissionState>((set, get) => ({
     }
     const items = [...get().items, submission]
     set({ items, error: null })
-    await saveSubmissions(projectPath, items)
+    await saveSubmissions(items)
     return submission
   },
 
-  update: async (projectPath, id, patch) => {
+  update: async (id, patch) => {
     const current = get().items.find((item) => item.id === id)
     if (!current) {
       throw new Error(`Submission not found: ${id}`)
@@ -106,14 +106,14 @@ export const useSubmissionStore = create<SubmissionState>((set, get) => ({
     }
     const items = get().items.map((item) => item.id === id ? updated : item)
     set({ items, error: null })
-    await saveSubmissions(projectPath, items)
+    await saveSubmissions(items)
     return updated
   },
 
-  delete: async (projectPath, id) => {
+  delete: async (id) => {
     const items = get().items.filter((item) => item.id !== id)
     set({ items, error: null })
-    await saveSubmissions(projectPath, items)
+    await saveSubmissions(items)
   },
 
   reset: () => set({ items: [], loading: false, error: null }),

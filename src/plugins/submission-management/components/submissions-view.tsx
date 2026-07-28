@@ -2,9 +2,9 @@ import { useEffect, useMemo, useState } from "react"
 import { Plus } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { Button } from "@/components/ui/button"
-import { readFile } from "@/commands/fs"
 import { useSubmissionStore } from "../store/submission-store"
-import { useWikiStore } from "@/stores/wiki-store"
+import type { PluginHost } from "@/core/plugins/host/types"
+import { usePluginProject } from "@/core/plugins/host/usePluginProject"
 import type { CreateSubmissionInput, Submission, SubmissionStatus } from "../domain/submission"
 import {
   buildSubmissionStats,
@@ -13,17 +13,15 @@ import {
   type SortDirection,
   type SubmissionSortKey,
 } from "./submission-view-model"
-import { buildPaperOptionsFromFiles, markdownPathsFromFileTree, type PaperOption } from "./paper-options"
+import { buildPaperOptionsFromFiles, type PaperOption } from "./paper-options"
 import { SubmissionStatsCards } from "./submission-stats"
 import { SubmissionFilters } from "./submission-filters"
 import { SubmissionTable } from "./submission-table"
 import { SubmissionFormDialog } from "./submission-form-dialog"
 
-export function SubmissionsView() {
+export function SubmissionsView({ host }: { host: PluginHost }) {
   const { t } = useTranslation()
-  const project = useWikiStore((s) => s.project)
-  const fileTree = useWikiStore((s) => s.fileTree)
-  const projectPathIndex = useWikiStore((s) => s.projectPathIndex)
+  const project = usePluginProject(host)
   const items = useSubmissionStore((s) => s.items)
   const createSubmission = useSubmissionStore((s) => s.create)
   const updateSubmission = useSubmissionStore((s) => s.update)
@@ -43,31 +41,33 @@ export function SubmissionsView() {
         setPaperOptions([])
         return
       }
-      const paths = markdownPathsFromFileTree(fileTree)
+      const paths = host.documents.listMarkdownPaths()
       const files = await Promise.all(
         paths.map(async (path) => {
           try {
-            return { path, content: await readFile(path) }
+            return { path, content: await host.documents.readText(path) }
           } catch {
             return null
           }
         }),
       )
       if (cancelled) return
-      const indexedSourcePaths = [...projectPathIndex.byPath.values()]
-        .map((entry) => entry.path)
+      const sourcePaths = [
+        ...host.documents.listSelectableSourcePaths(),
+        ...host.documents.listIndexedSourcePaths(),
+      ]
       setPaperOptions(buildPaperOptionsFromFiles(
         project.path,
-        fileTree,
+        paths,
         files.filter((file): file is { path: string; content: string } => file !== null),
-        indexedSourcePaths,
+        sourcePaths,
       ))
     }
     void loadOptions()
     return () => {
       cancelled = true
     }
-  }, [fileTree, project, projectPathIndex])
+  }, [host, project])
 
   const stats = useMemo(() => buildSubmissionStats(items), [items])
   const visibleItems = useMemo(() => {
@@ -88,16 +88,16 @@ export function SubmissionsView() {
   async function handleSave(input: CreateSubmissionInput) {
     if (!project) return
     if (editing) {
-      await updateSubmission(project.path, editing.id, input)
+      await updateSubmission(editing.id, input)
     } else {
-      await createSubmission(project.path, input)
+      await createSubmission(input)
     }
   }
 
   async function handleDelete(submission: Submission) {
     if (!project) return
     if (!window.confirm(t("submissions.confirmDelete", { title: submission.paperTitle }))) return
-    await deleteSubmission(project.path, submission.id)
+    await deleteSubmission(submission.id)
   }
 
   return (

@@ -1,6 +1,27 @@
 import { beforeEach, describe, expect, it } from "vitest"
 import { PluginRegistry } from "./PluginRegistry"
 import { builtinPlugins } from "./builtinPlugins"
+import { createPluginHost } from "./host/PluginHost"
+
+function createTestHost() {
+  return createPluginHost({
+    project: { current: () => null, subscribe: () => () => {} },
+    documents: {
+      listMarkdownPaths: () => [],
+      listSelectableSourcePaths: () => [],
+      listIndexedSourcePaths: () => [],
+      readText: async () => "",
+    },
+    files: {
+      exists: async () => false,
+      readText: async () => "",
+      writeText: async () => {},
+      createDirectory: async () => {},
+    },
+    settingsStorage: new Map<string, string>(),
+    notify: { info: () => {}, warning: () => {}, error: () => {} },
+  })
+}
 
 beforeEach(() => {
   const values = new Map<string, string>()
@@ -18,7 +39,8 @@ beforeEach(() => {
 describe("official built-in plugins", () => {
   it("keeps submission management hidden until it is explicitly enabled", async () => {
     const registry = new PluginRegistry()
-    builtinPlugins.forEach((plugin) => registry.register(plugin))
+    const host = createTestHost()
+    builtinPlugins.forEach((createPlugin) => registry.register(createPlugin(host)))
 
     expect(registry.isPluginEnabled("official.submission-management")).toBe(false)
     expect(registry.getPluginNavigationItems()).toEqual([])

@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest"
-import type { FileNode } from "@/types/wiki"
 import type { CreateSubmissionInput, Submission } from "../domain/submission"
 import {
   buildSubmissionStats,
@@ -131,17 +130,7 @@ describe("submission view model", () => {
 })
 
 describe("paper options", () => {
-  const tree: FileNode[] = [
-    {
-      name: "wiki",
-      path: "/project/wiki",
-      is_dir: true,
-      children: [
-        { name: "paper.md", path: "/project/wiki/paper.md", is_dir: false, children: [] },
-        { name: "note.md", path: "/project/wiki/note.md", is_dir: false, children: [] },
-      ],
-    },
-  ]
+  const markdownPaths = ["/project/wiki/paper.md", "/project/wiki/note.md"]
 
   it("prefers frontmatter type=paper pages and title frontmatter", async () => {
     const files: MarkdownFileCandidate[] = [
@@ -149,7 +138,7 @@ describe("paper options", () => {
       { path: "/project/wiki/note.md", content: "---\ntype: note\ntitle: Note Title\n---\n# Body" },
     ]
 
-    const options = buildPaperOptionsFromFiles("/project", tree, files)
+    const options = buildPaperOptionsFromFiles("/project", markdownPaths, files)
 
     expect(options).toEqual([
       {
@@ -165,7 +154,7 @@ describe("paper options", () => {
       { path: "/project/wiki/note.md", content: "---\ntype: note\n---\n# Body" },
     ]
 
-    const options = buildPaperOptionsFromFiles("/project", tree, files)
+    const options = buildPaperOptionsFromFiles("/project", markdownPaths, files)
 
     expect(options).toEqual([
       {
@@ -177,25 +166,7 @@ describe("paper options", () => {
   })
 
   it("includes imported docx sources as selectable papers", () => {
-    const sourceTree: FileNode[] = [
-      {
-        name: "raw",
-        path: "/project/raw",
-        is_dir: true,
-        children: [
-          {
-            name: "sources",
-            path: "/project/raw/sources",
-            is_dir: true,
-            children: [
-              { name: "uploaded-paper.docx", path: "/project/raw/sources/uploaded-paper.docx", is_dir: false, children: [] },
-            ],
-          },
-        ],
-      },
-    ]
-
-    const options = buildPaperOptionsFromFiles("/project", sourceTree, [])
+    const options = buildPaperOptionsFromFiles("/project", [], [], ["/project/raw/sources/uploaded-paper.docx"])
 
     expect(options).toEqual([
       {
