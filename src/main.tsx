@@ -4,6 +4,7 @@ import App from "./App";
 import "./index.css";
 import "@/i18n";
 import { loadAndApplyTheme, watchSystemTheme } from "@/lib/theme";
+import { PluginProvider } from "@/core/plugins/PluginProvider";
 
 function applyPlatformClass() {
   const isTauri = "__TAURI_INTERNALS__" in window || "__TAURI__" in window;
@@ -21,7 +22,9 @@ async function initApp() {
 
     ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
       <React.StrictMode>
-        <App />
+        <PluginProvider>
+          <App />
+        </PluginProvider>
       </React.StrictMode>
     );
   } catch (err) {

@@ -9,6 +9,7 @@ import { LintView } from "@/components/lint/lint-view"
 import { SearchView } from "@/components/search/search-view"
 import { GraphView } from "@/components/graph/graph-view"
 import { SubmissionsView } from "@/components/submissions/submissions-view"
+import { usePlugins } from "@/core/plugins/usePlugins"
 import { PreviewPanel } from "./preview-panel"
 
 export function ContentArea() {
@@ -45,6 +46,8 @@ function ActiveContent({
 }: {
   activeView: ReturnType<typeof useWikiStore.getState>["activeView"]
 }) {
+  const activePluginRoute = useWikiStore((s) => s.activePluginRoute)
+  const { getPluginByRoute } = usePlugins()
   switch (activeView) {
     case "chat":
       return <ChatPanel />
@@ -66,6 +69,11 @@ function ActiveContent({
       return <SearchView />
     case "graph":
       return <GraphView />
+    case "plugin": {
+      const plugin = activePluginRoute ? getPluginByRoute(activePluginRoute) : undefined
+      const PluginPage = plugin?.page
+      return PluginPage ? <PluginPage /> : <PreviewPanel />
+    }
     default:
       return <PreviewPanel />
   }

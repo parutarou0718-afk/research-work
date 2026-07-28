@@ -397,7 +397,8 @@ interface WikiState {
    * one wiki-relative) still works.
    */
   pendingScrollImageSrc: string | null
-  activeView: "chat" | "wiki" | "sources" | "search" | "graph" | "lint" | "review" | "submissions" | "skills" | "settings"
+  activeView: "chat" | "wiki" | "sources" | "search" | "graph" | "lint" | "review" | "submissions" | "skills" | "settings" | "plugin"
+  activePluginRoute: string | null
   llmConfig: LlmConfig
   /** Persisted global/default config, kept separate while a project override is effective. */
   globalLlmConfig: LlmConfig
@@ -439,6 +440,7 @@ interface WikiState {
   setExternalPreview: (preview: ExternalPreview | null) => void
   setPendingScrollImageSrc: (src: string | null) => void
   setActiveView: (view: WikiState["activeView"]) => void
+  setActivePluginRoute: (route: string | null) => void
   setLlmConfig: (config: LlmConfig) => void
   setGlobalLlmConfig: (config: LlmConfig) => void
   setProviderConfigs: (configs: ProviderConfigs) => void
@@ -473,6 +475,7 @@ export const useWikiStore = create<WikiState>((set) => ({
   previewContentPath: null,
   externalPreview: null,
   previewReturnView: null,
+  activePluginRoute: null,
   pendingScrollImageSrc: null,
   activeView: "wiki",
   llmConfig: {
@@ -563,6 +566,7 @@ export const useWikiStore = create<WikiState>((set) => ({
   setExternalPreview: (externalPreview) => set({ externalPreview }),
   setPendingScrollImageSrc: (pendingScrollImageSrc) => set({ pendingScrollImageSrc }),
   setActiveView: (activeView) => set({ activeView, previewReturnView: null }),
+  setActivePluginRoute: (activePluginRoute) => set({ activeView: "plugin", activePluginRoute, previewReturnView: null }),
   searchApiConfig: {
     provider: "none",
     apiKey: "",

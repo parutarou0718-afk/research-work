@@ -15,6 +15,7 @@ import {
   Server,
   Settings,
   FileText,
+  Puzzle,
 } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { invoke } from "@tauri-apps/api/core"
@@ -44,6 +45,7 @@ import { GeneralSection } from "./sections/general-section"
 import { ChangelogSection } from "./sections/changelog-section"
 import { MaintenanceSection } from "./sections/maintenance-section"
 import { AboutSection } from "./sections/about-section"
+import { PluginsSection } from "./sections/plugins-section"
 
 type CategoryId =
   | "general"
@@ -61,6 +63,7 @@ type CategoryId =
   | "maintenance"
   | "changelog"
   | "about"
+  | "plugins"
 
 interface Category {
   id: CategoryId
@@ -87,6 +90,7 @@ const CATEGORIES: Category[] = [
   { id: "maintenance", labelKey: "settings.categories.maintenance", icon: Wrench },
   { id: "changelog", labelKey: "settings.categories.changelog", icon: History },
   { id: "about", labelKey: "settings.categories.about", icon: Info },
+  { id: "plugins", labelKey: "settings.categories.plugins", icon: Puzzle },
 ]
 
 function initialDraft(
@@ -651,6 +655,8 @@ export function SettingsView() {
         return <ChangelogSection />
       case "about":
         return <AboutSection />
+      case "plugins":
+        return <PluginsSection />
     }
   }, [active, draft, setDraft])
 
@@ -714,7 +720,7 @@ export function SettingsView() {
         {/* Global Save bar hidden for sections that persist inline:
             - "llm" saves per-row on every edit (independent per-preset state)
             - "about" has no draft-bound fields */}
-        {active !== "about" && active !== "llm" && (
+        {active !== "about" && active !== "llm" && active !== "plugins" && (
           <div className="shrink-0 border-t bg-background/80 backdrop-blur px-8 py-3">
             <div className="mx-auto flex max-w-2xl items-center justify-between gap-4">
               <p className={`text-xs ${saveError ? "text-destructive" : "text-muted-foreground"}`}>

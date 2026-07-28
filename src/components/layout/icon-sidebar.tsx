@@ -9,6 +9,7 @@ import { useWikiStore } from "@/stores/wiki-store"
 import { useReviewStore } from "@/stores/review-store"
 import { useResearchStore } from "@/stores/research-store"
 import { useUpdateStore, hasAvailableUpdate } from "@/stores/update-store"
+import { usePlugins } from "@/core/plugins/usePlugins"
 import { useTranslation } from "react-i18next"
 import logoImg from "@/assets/logo.jpg"
 import type { WikiState } from "@/stores/wiki-store"
@@ -51,6 +52,8 @@ export function IconSidebar({ onSwitchProject, onNewIdea }: IconSidebarProps) {
   // remaining indicator that an update is available, so the user
   // never finds their way back to it.
   const updateAvailable = useUpdateStore((s) => hasAvailableUpdate(s))
+  const { navigationItems } = usePlugins()
+  const setActivePluginRoute = useWikiStore((s) => s.setActivePluginRoute)
 
   // Daemon health check
   const [daemonStatus, setDaemonStatus] = useState<string>("starting")
@@ -111,6 +114,24 @@ export function IconSidebar({ onSwitchProject, onNewIdea }: IconSidebarProps) {
               </TooltipContent>
             </Tooltip>
           ))}
+          {navigationItems.map((item) => {
+            const Icon = item.icon ?? Sparkles
+            return (
+              <Tooltip key={`plugin-${item.id}`}>
+                <TooltipTrigger
+                  onClick={() => setActivePluginRoute(item.route)}
+                  className={`relative flex h-10 w-10 items-center justify-center rounded-md transition-colors ${
+                    activeView === "plugin"
+                      ? "bg-accent text-accent-foreground"
+                      : "text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground"
+                  }`}
+                >
+                  <Icon className="h-5 w-5" />
+                </TooltipTrigger>
+                <TooltipContent side="right">{item.label}</TooltipContent>
+              </Tooltip>
+            )
+          })}
           {/* Deep Research — same row as other nav items */}
           <Tooltip>
             <TooltipTrigger

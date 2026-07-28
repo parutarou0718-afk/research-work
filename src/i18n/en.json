@@ -557,6 +557,7 @@
       "maintenance": "Maintenance",
       "changelog": "Changelog",
       "about": "About"
+      ,"plugins": "Feature modules"
     },
     "sections": {
       "general": {
