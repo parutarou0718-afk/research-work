@@ -8,7 +8,6 @@ import { ReviewView } from "@/components/review/review-view"
 import { LintView } from "@/components/lint/lint-view"
 import { SearchView } from "@/components/search/search-view"
 import { GraphView } from "@/components/graph/graph-view"
-import { SubmissionsView } from "@/components/submissions/submissions-view"
 import { usePlugins } from "@/core/plugins/usePlugins"
 import { PreviewPanel } from "./preview-panel"
 
@@ -61,8 +60,6 @@ function ActiveContent({
       return null
     case "review":
       return <ReviewView />
-    case "submissions":
-      return <SubmissionsView />
     case "lint":
       return <LintView />
     case "search":

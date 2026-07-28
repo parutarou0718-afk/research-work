@@ -11,8 +11,8 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import type { CreateSubmissionInput, Submission, SubmissionStatus } from "@/types/submission"
-import { SUBMISSION_STATUSES } from "@/types/submission"
+import type { CreateSubmissionInput, Submission, SubmissionStatus } from "../domain/submission"
+import { SUBMISSION_STATUSES } from "../domain/submission"
 import type { PaperOption } from "./paper-options"
 import {
   isBlockingValidationIssue,

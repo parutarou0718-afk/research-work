@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next"
 import { Button } from "@/components/ui/button"
-import type { Submission } from "@/types/submission"
+import type { Submission } from "../domain/submission"
 import { isSubmissionOverdue, submissionStatusLabelKey } from "./submission-view-model"
 import { SubmissionStatusBadge } from "./submission-status-badge"
 

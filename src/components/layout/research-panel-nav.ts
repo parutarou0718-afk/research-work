@@ -1,7 +1,7 @@
 import type { WikiState } from "@/stores/wiki-store"
 
 export function isStandaloneView(view: WikiState["activeView"]): boolean {
-  return view === "chat" || view === "submissions" || view === "skills" || view === "settings"
+  return view === "chat" || view === "skills" || view === "settings" || view === "plugin"
 }
 
 export function isResearchPanelVisible(

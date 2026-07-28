@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import type { FileNode } from "@/types/wiki"
-import type { CreateSubmissionInput, Submission } from "@/types/submission"
+import type { CreateSubmissionInput, Submission } from "../domain/submission"
 import {
   buildSubmissionStats,
   filterSubmissions,

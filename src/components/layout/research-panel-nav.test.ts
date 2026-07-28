@@ -18,7 +18,7 @@ describe("research panel nav state", () => {
       activeView: "wiki",
       researchPanelOpen: true,
     })
-    expect(nextResearchPanelNavState("submissions", false)).toEqual({
+    expect(nextResearchPanelNavState("plugin", false)).toEqual({
       activeView: "wiki",
       researchPanelOpen: true,
     })
@@ -39,7 +39,7 @@ describe("research panel nav state", () => {
     expect(isResearchPanelVisible("chat", true)).toBe(false)
     expect(isResearchPanelVisible("skills", true)).toBe(false)
     expect(isResearchPanelVisible("settings", true)).toBe(false)
-    expect(isResearchPanelVisible("submissions", true)).toBe(false)
+    expect(isResearchPanelVisible("plugin", true)).toBe(false)
     expect(isResearchPanelVisible("wiki", true)).toBe(true)
   })
 })

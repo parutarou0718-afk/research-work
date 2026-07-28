@@ -7,12 +7,10 @@ import { useWikiStore } from "@/stores/wiki-store"
 import { useReviewStore } from "@/stores/review-store"
 import { useLintStore } from "@/stores/lint-store"
 import { useChatStore } from "@/stores/chat-store"
-import { useSubmissionStore } from "@/stores/submission-store"
 import { BASE_FONT_SIZE_PX, useZoomStore } from "@/stores/zoom-store"
 import { openProject } from "@/commands/fs"
 import { getLastProject, getRecentProjects, saveLastProject, loadLlmConfig, loadLanguage, loadSearchApiConfig, loadEmbeddingConfig, loadMineruConfig, loadMultimodalConfig, loadOutputLanguage, loadProviderConfigs, loadCustomLlmPresets, loadActivePresetId, loadTaskModelRouting, loadProjectLlmOverride, loadProxyConfig, loadScheduledImportConfig, saveScheduledImportConfig, loadSourceWatchConfig, loadApiConfig, loadGeneralConfig, loadZoomLevel } from "@/lib/project-store"
 import { loadReviewItems, loadLintItems, loadChatHistory, loadChatPreferences } from "@/lib/persist"
-import { loadSubmissions } from "@/lib/submission-persist"
 import { setupAutoSave } from "@/lib/auto-save"
 import { startClipWatcher } from "@/lib/clip-watcher"
 import { AppLayout } from "@/components/layout/app-layout"
@@ -103,18 +101,6 @@ function App() {
       console.warn("[startup] failed to load lint items:", err)
     }
 
-    try {
-      const savedSubmissions = await loadSubmissions(proj.path)
-      if (isCurrentProject(proj)) {
-        useSubmissionStore.setState({
-          items: savedSubmissions,
-          loading: false,
-          error: null,
-        })
-      }
-    } catch (err) {
-      console.warn("[startup] failed to load submissions:", err)
-    }
   }
 
   async function hydrateScheduledImportAfterOpen(proj: WikiProject): Promise<void> {

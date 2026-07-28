@@ -397,7 +397,7 @@ interface WikiState {
    * one wiki-relative) still works.
    */
   pendingScrollImageSrc: string | null
-  activeView: "chat" | "wiki" | "sources" | "search" | "graph" | "lint" | "review" | "submissions" | "skills" | "settings" | "plugin"
+  activeView: "chat" | "wiki" | "sources" | "search" | "graph" | "lint" | "review" | "skills" | "settings" | "plugin"
   activePluginRoute: string | null
   llmConfig: LlmConfig
   /** Persisted global/default config, kept separate while a project override is effective. */

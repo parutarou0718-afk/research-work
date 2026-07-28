@@ -26,6 +26,20 @@ export interface PluginCommand {
   execute: () => void | Promise<void>
 }
 
+export type PluginDataRecoveryDecision = "restore" | "defer"
+export type PluginDataRecoveryState = "ready" | "pending" | "deferred"
+
+/**
+ * Optional capability for plugins that retain project-local data while hidden.
+ * Core only coordinates the decision; each plugin owns its own storage.
+ */
+export interface PluginDataRecovery {
+  hasHistoricalData: () => Promise<boolean>
+  restore: () => void | Promise<void>
+  defer: () => void | Promise<void>
+  clearRuntimeData: () => void | Promise<void>
+}
+
 export interface LlmWikiPlugin {
   manifest: PluginManifest
   navigationItems?: PluginNavigationItem[]
@@ -33,4 +47,5 @@ export interface LlmWikiPlugin {
   page?: ComponentType
   activate?: () => void | Promise<void>
   deactivate?: () => void | Promise<void>
+  dataRecovery?: PluginDataRecovery
 }

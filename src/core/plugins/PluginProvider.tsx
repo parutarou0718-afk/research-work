@@ -1,7 +1,14 @@
 import { createContext, useEffect, useMemo, useState, type ReactNode } from "react"
 import { PluginRegistry } from "./PluginRegistry"
 import { builtinPlugins } from "./builtinPlugins"
-import type { LlmWikiPlugin, PluginId, PluginNavigationItem } from "./types"
+import { useWikiStore } from "@/stores/wiki-store"
+import type {
+  LlmWikiPlugin,
+  PluginDataRecoveryDecision,
+  PluginDataRecoveryState,
+  PluginId,
+  PluginNavigationItem,
+} from "./types"
 
 export interface PluginContextValue {
   plugins: LlmWikiPlugin[]
@@ -9,6 +16,9 @@ export interface PluginContextValue {
   navigationItems: PluginNavigationItem[]
   enablePlugin: (id: PluginId) => Promise<void>
   disablePlugin: (id: PluginId) => Promise<void>
+  isPluginDataRecoveryPending: (id: PluginId) => boolean
+  getPluginDataRecoveryState: (id: PluginId) => PluginDataRecoveryState
+  resolvePluginDataRecovery: (id: PluginId, decision: PluginDataRecoveryDecision) => Promise<void>
   isPluginEnabled: (id: PluginId) => boolean
   getPluginByRoute: (route: string) => LlmWikiPlugin | undefined
 }
@@ -16,6 +26,7 @@ export interface PluginContextValue {
 export const PluginContext = createContext<PluginContextValue | null>(null)
 
 export function PluginProvider({ children }: { children: ReactNode }) {
+  const projectPath = useWikiStore((state) => state.project?.path ?? null)
   const [registry] = useState(() => {
     const next = new PluginRegistry()
     builtinPlugins.forEach((plugin) => next.register(plugin))
@@ -27,6 +38,12 @@ export function PluginProvider({ children }: { children: ReactNode }) {
     void registry.activateEnabledPlugins()
   }, [registry])
 
+  useEffect(() => {
+    void registry.refreshEnabledPluginDataRecovery().then(() => {
+      setVersion((current) => current + 1)
+    })
+  }, [projectPath, registry])
+
   const value = useMemo<PluginContextValue>(() => ({
     plugins: registry.getAllPlugins(),
     enabledPlugins: registry.getEnabledPlugins(),
@@ -37,6 +54,12 @@ export function PluginProvider({ children }: { children: ReactNode }) {
     },
     disablePlugin: async (id) => {
       await registry.disablePlugin(id)
+      setVersion((current) => current + 1)
+    },
+    isPluginDataRecoveryPending: (id) => registry.isPluginDataRecoveryPending(id),
+    getPluginDataRecoveryState: (id) => registry.getPluginDataRecoveryState(id),
+    resolvePluginDataRecovery: async (id, decision) => {
+      await registry.resolvePluginDataRecovery(id, decision)
       setVersion((current) => current + 1)
     },
     isPluginEnabled: (id) => registry.isPluginEnabled(id),

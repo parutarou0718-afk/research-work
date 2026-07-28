@@ -97,4 +97,73 @@ describe("PluginRegistry", () => {
     await expect(registry.enablePlugin("official.example")).resolves.toBeUndefined()
     expect(registry.isPluginEnabled("official.example")).toBe(true)
   })
+
+  it("keeps historical plugin data untouched until the user explicitly restores it", async () => {
+    const restore = vi.fn()
+    const defer = vi.fn()
+    const clearRuntimeData = vi.fn()
+    const registry = new PluginRegistry()
+    registry.register({
+      ...plugin(),
+      dataRecovery: {
+        hasHistoricalData: async () => true,
+        restore,
+        defer,
+        clearRuntimeData,
+      },
+    })
+
+    await registry.enablePlugin("official.example")
+
+    expect(registry.isPluginDataRecoveryPending("official.example")).toBe(true)
+    expect(restore).not.toHaveBeenCalled()
+    expect(defer).not.toHaveBeenCalled()
+
+    await registry.resolvePluginDataRecovery("official.example", "defer")
+    expect(defer).toHaveBeenCalledOnce()
+    expect(registry.isPluginDataRecoveryPending("official.example")).toBe(false)
+    expect(registry.getPluginDataRecoveryState("official.example")).toBe("deferred")
+
+    await registry.disablePlugin("official.example")
+    expect(clearRuntimeData).toHaveBeenCalledOnce()
+  })
+
+  it("keeps the recovery decision available when restoring historical data fails", async () => {
+    const registry = new PluginRegistry()
+    registry.register({
+      ...plugin(),
+      dataRecovery: {
+        hasHistoricalData: async () => true,
+        restore: async () => { throw new Error("disk unavailable") },
+        defer: vi.fn(),
+        clearRuntimeData: vi.fn(),
+      },
+    })
+    await registry.enablePlugin("official.example")
+
+    await registry.resolvePluginDataRecovery("official.example", "restore")
+
+    expect(registry.isPluginDataRecoveryPending("official.example")).toBe(true)
+  })
+
+  it("clears plugin runtime state before checking a newly opened project for history", async () => {
+    const clearRuntimeData = vi.fn()
+    const registry = new PluginRegistry()
+    registry.register({
+      ...plugin(),
+      dataRecovery: {
+        hasHistoricalData: async () => true,
+        restore: vi.fn(),
+        defer: vi.fn(),
+        clearRuntimeData,
+      },
+    })
+    await registry.enablePlugin("official.example")
+    clearRuntimeData.mockClear()
+
+    await registry.refreshEnabledPluginDataRecovery()
+
+    expect(clearRuntimeData).toHaveBeenCalledOnce()
+    expect(registry.getPluginDataRecoveryState("official.example")).toBe("pending")
+  })
 })

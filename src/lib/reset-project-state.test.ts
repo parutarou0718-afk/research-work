@@ -4,7 +4,6 @@ import { useChatStore } from "@/stores/chat-store"
 import { useReviewStore } from "@/stores/review-store"
 import { useActivityStore } from "@/stores/activity-store"
 import { useResearchStore } from "@/stores/research-store"
-import { useSubmissionStore } from "@/stores/submission-store"
 import { getQueue, pauseQueue } from "./ingest-queue"
 
 // Dynamic-import mocks: resetProjectState uses `import("@/lib/ingest-queue")`
@@ -117,35 +116,6 @@ describe("resetProjectState — Zustand stores", () => {
     expect(useResearchStore.getState().panelOpen).toBe(false)
   })
 
-  it("clears submission store items", async () => {
-    useSubmissionStore.setState({
-      items: [
-        {
-          id: "submission-1",
-          paperPath: "wiki/paper.md",
-          paperTitle: "Paper",
-          journalName: "Journal",
-          manuscriptId: "",
-          submittedAt: null,
-          status: "preparing",
-          currentRound: 1,
-          responseDueAt: null,
-          revisedAt: null,
-          acceptedAt: null,
-          publishedAt: null,
-          correspondingAuthor: "",
-          notes: "",
-          events: [],
-          createdAt: 1,
-          updatedAt: 1,
-        },
-      ],
-    })
-
-    await resetProjectState()
-
-    expect(useSubmissionStore.getState().items).toEqual([])
-  })
 })
 
 describe("resetProjectState — module-level caches are awaited", () => {

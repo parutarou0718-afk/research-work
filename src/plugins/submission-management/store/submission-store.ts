@@ -1,12 +1,12 @@
 import { create } from "zustand"
-import { loadSubmissions, saveSubmissions } from "@/lib/submission-persist"
+import { loadSubmissions, saveSubmissions } from "../persistence/submission-persist"
 import type {
   CreateSubmissionInput,
   Submission,
   SubmissionEvent,
   SubmissionStatus,
   UpdateSubmissionInput,
-} from "@/types/submission"
+} from "../domain/submission"
 
 interface SubmissionState {
   items: Submission[]

@@ -1,4 +1,4 @@
-import type { SubmissionStatus } from "@/types/submission"
+import type { SubmissionStatus } from "../domain/submission"
 import { cn } from "@/lib/utils"
 
 const STATUS_CLASS: Record<SubmissionStatus, string> = {

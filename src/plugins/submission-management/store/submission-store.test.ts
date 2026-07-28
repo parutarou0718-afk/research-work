@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import type { Submission } from "@/types/submission"
+import type { Submission } from "../domain/submission"
 
 const mocks = vi.hoisted(() => ({
   loadSubmissions: vi.fn(),
   saveSubmissions: vi.fn(),
 }))
 
-vi.mock("@/lib/submission-persist", () => ({
+vi.mock("../persistence/submission-persist", () => ({
   loadSubmissions: mocks.loadSubmissions,
   saveSubmissions: mocks.saveSubmissions,
 }))

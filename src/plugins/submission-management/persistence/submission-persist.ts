@@ -1,6 +1,6 @@
 import { createDirectory, readFile, writeFileAtomic } from "@/commands/fs"
 import { normalizePath } from "@/lib/path-utils"
-import { isSubmissionStatus, type Submission } from "@/types/submission"
+import { isSubmissionStatus, type Submission } from "../domain/submission"
 
 export const SUBMISSIONS_FILE_NAME = "submissions.json"
 
@@ -77,6 +77,11 @@ export async function loadSubmissions(projectPath: string): Promise<Submission[]
   } catch {
     return []
   }
+}
+
+/** Reads only the persisted envelope; it never hydrates the plugin Store. */
+export async function hasSavedSubmissions(projectPath: string): Promise<boolean> {
+  return (await loadSubmissions(projectPath)).length > 0
 }
 
 export async function saveSubmissions(projectPath: string, items: Submission[]): Promise<void> {

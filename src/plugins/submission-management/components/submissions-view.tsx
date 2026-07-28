@@ -3,9 +3,9 @@ import { Plus } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { Button } from "@/components/ui/button"
 import { readFile } from "@/commands/fs"
-import { useSubmissionStore } from "@/stores/submission-store"
+import { useSubmissionStore } from "../store/submission-store"
 import { useWikiStore } from "@/stores/wiki-store"
-import type { CreateSubmissionInput, Submission, SubmissionStatus } from "@/types/submission"
+import type { CreateSubmissionInput, Submission, SubmissionStatus } from "../domain/submission"
 import {
   buildSubmissionStats,
   filterSubmissions,

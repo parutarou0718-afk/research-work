@@ -1,5 +1,5 @@
-import type { CreateSubmissionInput, Submission, SubmissionStatus } from "@/types/submission"
-import { SUBMISSION_STATUSES } from "@/types/submission"
+import type { CreateSubmissionInput, Submission, SubmissionStatus } from "../domain/submission"
+import { SUBMISSION_STATUSES } from "../domain/submission"
 
 export type SubmissionSortKey = "submittedAt" | "responseDueAt" | "updatedAt"
 export type SortDirection = "asc" | "desc"

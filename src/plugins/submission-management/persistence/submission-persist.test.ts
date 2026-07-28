@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest"
 import { realFs, createTempProject, readFileRaw, writeFileRaw, fileExists } from "@/test-helpers/fs-temp"
-import type { Submission } from "@/types/submission"
+import type { Submission } from "../domain/submission"
 
 const mocks = vi.hoisted(() => ({
   writeFileAtomic: vi.fn(),
@@ -13,6 +13,7 @@ vi.mock("@/commands/fs", () => ({
 
 import {
   loadSubmissions,
+  hasSavedSubmissions,
   saveSubmissions,
   SUBMISSIONS_FILE_NAME,
 } from "./submission-persist"
@@ -55,6 +56,11 @@ afterEach(async () => {
 describe("submission persistence", () => {
   it("returns an empty list when submissions.json does not exist", async () => {
     await expect(loadSubmissions(tmp.path)).resolves.toEqual([])
+  })
+
+  it("detects historical submissions without hydrating a Store", async () => {
+    await saveSubmissions(tmp.path, [makeSubmission()])
+    await expect(hasSavedSubmissions(tmp.path)).resolves.toBe(true)
   })
 
   it("saves and loads submissions from .llm-wiki/submissions.json", async () => {

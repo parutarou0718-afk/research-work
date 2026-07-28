@@ -14,7 +14,6 @@ import { useLintStore } from "@/stores/lint-store"
 import { useActivityStore } from "@/stores/activity-store"
 import { useResearchStore } from "@/stores/research-store"
 import { useWikiStore } from "@/stores/wiki-store"
-import { useSubmissionStore } from "@/stores/submission-store"
 
 export async function resetProjectState(): Promise<void> {
   // Zustand stores — clear all per-project data (synchronous)
@@ -55,8 +54,6 @@ export async function resetProjectState(): Promise<void> {
     tasks: [],
     panelOpen: false,
   })
-
-  useSubmissionStore.getState().reset()
 
   // Module-level caches — load in parallel and clear each, surfacing any
   // failure instead of swallowing it.

@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next"
 import { Input } from "@/components/ui/input"
-import { SUBMISSION_STATUSES, type SubmissionStatus } from "@/types/submission"
+import { SUBMISSION_STATUSES, type SubmissionStatus } from "../domain/submission"
 import type { SortDirection, SubmissionSortKey } from "./submission-view-model"
 import { submissionStatusLabelKey } from "./submission-view-model"
 
