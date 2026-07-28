@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core"
-import type { FileNode, WikiProject } from "@/types/wiki"
+import type { FileNode } from "@/types/wiki"
+import { LOCAL_PROJECT_CAPABILITIES, type LocalProject } from "@/domain/projects"
 import { ensureProjectId, upsertProjectInfo } from "@/lib/project-identity"
 import { isAbsolutePath } from "@/lib/path-utils"
 
@@ -218,18 +219,18 @@ export async function readFileAsBase64(path: string): Promise<FileBase64> {
 export async function createProject(
   name: string,
   path: string,
-): Promise<WikiProject> {
+): Promise<LocalProject> {
   const raw = await invoke<RawProject>("create_project", { name, path })
   const id = await ensureProjectId(raw.path)
   await upsertProjectInfo(id, raw.path, raw.name)
-  return { id, name: raw.name, path: raw.path }
+  return { id, source: "local", name: raw.name, path: raw.path, capabilities: LOCAL_PROJECT_CAPABILITIES }
 }
 
-export async function openProject(path: string): Promise<WikiProject> {
+export async function openProject(path: string): Promise<LocalProject> {
   const raw = await invoke<RawProject>("open_project", { path })
   const id = await ensureProjectId(raw.path)
   await upsertProjectInfo(id, raw.path, raw.name)
-  return { id, name: raw.name, path: raw.path }
+  return { id, source: "local", name: raw.name, path: raw.path, capabilities: LOCAL_PROJECT_CAPABILITIES }
 }
 
 export async function openProjectFolder(path: string): Promise<void> {

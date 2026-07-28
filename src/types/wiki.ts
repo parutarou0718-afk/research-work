@@ -1,10 +1,20 @@
+/**
+ * Compatibility shape used by existing local-only file APIs. New workspace
+ * code uses the discriminated Project union from @/domain/projects instead.
+ */
 export interface WikiProject {
-  /** Stable UUID, persisted inside the project at .llm-wiki/project.json.
-   *  Survives the user moving or renaming the project folder. */
   id: string
   name: string
   path: string
 }
+
+export type {
+  LocalProject,
+  PandaWikiVirtualProject,
+  Project,
+  ProjectCapabilities,
+  ProviderScopeKey,
+} from "@/domain/projects"
 
 export interface FileNode {
   name: string
