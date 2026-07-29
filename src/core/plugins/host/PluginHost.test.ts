@@ -1,5 +1,11 @@
 import { describe, expect, it, vi } from "vitest"
-import { createPluginHost } from "./PluginHost"
+import type { PandaWikiVirtualProject } from "@/domain/projects"
+import { createDefaultPluginHost, createPluginHost } from "./PluginHost"
+import { useWikiStore } from "@/stores/wiki-store"
+
+vi.mock("@tauri-apps/plugin-store", () => ({
+  load: vi.fn(async () => new Map<string, unknown>()),
+}))
 
 const project = { id: "project-1", name: "Project", source: "local" as const, path: "/workspace/project" }
 
@@ -89,6 +95,42 @@ describe("PluginHost", () => {
     expect(files.size).toBe(0)
     await expect(host.storage.forPlugin("official.submission-management").readJson("storage.json"))
       .resolves.toEqual({ version: 1 })
+  })
+
+  it("returns a stable PandaWiki project snapshot to React subscribers", () => {
+    const remoteProject: PandaWikiVirtualProject = {
+      id: "pandawiki:server-a:kb-1",
+      name: "Remote knowledge",
+      source: "pandawiki" as const,
+      connectionId: "server-a",
+      knowledgeBaseId: "kb-1",
+      scopeKey: "pandawiki:server-a:kb-1",
+      capabilities: {
+        readKnowledge: true,
+        search: false,
+        chat: false,
+        editNode: false,
+        upload: false,
+        conversationHistory: false,
+        graph: false,
+        filesystem: false,
+      },
+    }
+    useWikiStore.getState().setActiveProject(remoteProject)
+    const settings = new Map<string, string>()
+    vi.stubGlobal("localStorage", {
+      getItem: (key: string) => settings.get(key) ?? null,
+      setItem: (key: string, value: string) => settings.set(key, value),
+      removeItem: (key: string) => settings.delete(key),
+    })
+
+    try {
+      const host = createDefaultPluginHost()
+      expect(host.project.current()).toBe(host.project.current())
+    } finally {
+      useWikiStore.getState().setActiveProject(null)
+      vi.unstubAllGlobals()
+    }
   })
 
   it("exposes only document data through the host adapter", async () => {

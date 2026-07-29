@@ -151,13 +151,10 @@ function createDefaultDocumentsApi(): PluginDocumentsApi {
 
 export function createDefaultPluginHost(): PluginHost {
   const project: PluginProjectApi = {
-    current: () => {
-      const active = useWikiStore.getState().activeProject
-      if (!active) return null
-      return active.source === "local"
-        ? { id: active.id, name: active.name, source: "local", path: active.path }
-        : { id: active.id, name: active.name, source: "pandawiki", scopeKey: active.scopeKey }
-    },
+    // useSyncExternalStore requires an unchanged snapshot to retain object
+    // identity. Returning a projected copy here makes remote plugin views
+    // re-render indefinitely even when the active project has not changed.
+    current: () => useWikiStore.getState().activeProject,
     subscribe: (listener) => useWikiStore.subscribe((state, previous) => {
       if (state.activeProject?.id !== previous.activeProject?.id) listener()
     }),
