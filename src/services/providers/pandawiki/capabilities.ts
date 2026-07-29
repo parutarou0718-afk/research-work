@@ -4,7 +4,7 @@ export const pandaWikiCapabilities: ProviderCapabilities = {
   auth: true,
   documents: false,
   conversations: false,
-  search: false,
+  search: true,
   graph: false,
   templates: false,
   providerName: "PandaWiki",

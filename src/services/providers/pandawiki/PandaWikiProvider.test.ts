@@ -11,6 +11,7 @@ function createGateway(): PandaWikiAuthGateway {
     listKnowledgeBases: vi.fn(async () => ([{ id: "kb-1", name: "Research", dataset_id: "dataset-1", created_at: "2026-01-01", updated_at: "2026-01-02" }])),
     getNodeTree: vi.fn(async (kbId: string) => ({ kb_id: kbId, groups: [{ nav_id: "nav-1", nav_name: "Main", position: 1, list: [{ id: "node-1", name: "Overview", parent_id: "", nav_id: "nav-1", type: "file", status: "normal", position: 1, updated_at: "2026-01-02" }] }] })),
     getNodeDetail: vi.fn(async (kbId: string, nodeId: string) => ({ id: nodeId, kb_id: kbId, name: "Overview", content: "# Overview", parent_id: "", type: "file", status: "normal", updated_at: "2026-01-02" })),
+    searchKnowledgeBase: vi.fn(async () => ({ node_result: [{ node_id: "node-1", name: "Overview", summary: "A short summary", emoji: "📚", node_path_names: ["Research", "Overview"] }] })),
   }
 }
 
@@ -66,13 +67,27 @@ describe("PandaWiki authentication provider", () => {
     expect(gateway.getNodeDetail).toHaveBeenCalledWith("kb-2", "node-1")
   })
 
+  it("uses the authenticated server search gateway without accepting client permission groups", async () => {
+    const gateway = createGateway()
+    const provider = createPandaWikiProvider({ baseUrl: "https://wiki.example", createGateway: async () => gateway })
+
+    await expect(provider.search.search("kb-1", "retrieval")).resolves.toEqual([{
+      nodeId: "node-1",
+      title: "Overview",
+      summary: "A short summary",
+      emoji: "📚",
+      pathNames: ["Research", "Overview"],
+    }])
+    expect(gateway.searchKnowledgeBase).toHaveBeenCalledWith("kb-1", "retrieval")
+  })
+
   it("advertises only capabilities backed by a callable client adapter", () => {
     const provider = createPandaWikiProvider({ baseUrl: "https://wiki.example", createGateway: async () => createGateway() })
     expect(provider.capabilities).toMatchObject({
       auth: true,
       documents: false,
       conversations: false,
-      search: false,
+      search: true,
       graph: false,
       templates: false,
     })

@@ -4,6 +4,7 @@ import {
   isPandaWikiChatSettingsAvailable,
   isViewAvailable,
   usesPandaWikiChatSurface,
+  usesPandaWikiSearchSurface,
 } from "./project-capabilities"
 
 const remote: PandaWikiVirtualProject = {
@@ -39,6 +40,16 @@ describe("project capability policy", () => {
 
     expect(usesPandaWikiChatSurface(chatProject)).toBe(true)
     expect(usesPandaWikiChatSurface(remote)).toBe(false)
+  })
+
+  it("routes a search-capable PandaWiki project to the server search surface", () => {
+    const searchProject: PandaWikiVirtualProject = {
+      ...remote,
+      capabilities: { ...remote.capabilities, search: true },
+    }
+
+    expect(usesPandaWikiSearchSurface(searchProject)).toBe(true)
+    expect(usesPandaWikiSearchSurface(remote)).toBe(false)
   })
 
   it("shows PandaWiki chat configuration only for remote projects", () => {

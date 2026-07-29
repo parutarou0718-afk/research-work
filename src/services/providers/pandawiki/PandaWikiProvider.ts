@@ -1,14 +1,18 @@
 import type { AuthSession, FileTreeModel, KnowledgeModel, LoginInput, NodeModel } from "@/types/wiki"
 import type { AuthProvider } from "../contracts/AuthProvider"
 import type { ProviderBundle } from "../contracts/ProviderBundle"
+import type { SearchProvider } from "../contracts/SearchProvider"
 import type { UserDTO } from "./dto/AuthDTO"
 import { PandaWikiAuthApi } from "./api/auth-api"
 import { PandaWikiKnowledgeApi } from "./api/knowledge-api"
+import { PandaWikiKnowledgeSearchApi } from "./api/knowledge-search-api"
 import { PandaWikiNodeApi } from "./api/node-api"
 import { PandaWikiApiError, PandaWikiClient } from "./api/client"
 import type { KnowledgeDTO } from "./dto/KnowledgeDTO"
+import type { KnowledgeSearchResponseDTO } from "./dto/KnowledgeSearchDTO"
 import type { NodeDTO, NodeTreeDTO } from "./dto/NodeDTO"
 import { mapKnowledgeDto } from "./mapper/KnowledgeMapper"
+import { mapKnowledgeSearchDto } from "./mapper/KnowledgeSearchMapper"
 import { mapNodeDto, mapNodeTreeDto } from "./mapper/NodeMapper"
 import type { SessionStore } from "./session/SessionStore"
 import { createDefaultSessionStore } from "./session/TauriSessionStore"
@@ -27,10 +31,12 @@ export interface PandaWikiAuthGateway {
   listKnowledgeBases(): Promise<KnowledgeDTO[]>
   getNodeTree(kbId: string): Promise<NodeTreeDTO>
   getNodeDetail(kbId: string, nodeId: string): Promise<NodeDTO>
+  searchKnowledgeBase(kbId: string, query: string): Promise<KnowledgeSearchResponseDTO>
 }
 
 export interface PandaWikiAuthenticationProvider extends ProviderBundle {
   auth: AuthProvider
+  search: SearchProvider
   /**
    * Workspace selection is kept beside the adapter, never inferred from a
    * virtual project's display name or a local filesystem path.
@@ -55,6 +61,7 @@ async function createDefaultGateway(baseUrl: string): Promise<PandaWikiAuthGatew
   const client = await PandaWikiClient.create(baseUrl)
   const auth = new PandaWikiAuthApi(client)
   const knowledge = new PandaWikiKnowledgeApi(client)
+  const search = new PandaWikiKnowledgeSearchApi(client)
   const nodes = new PandaWikiNodeApi(client)
   return {
     setAccessToken: (token) => client.setAccessToken(token),
@@ -64,6 +71,7 @@ async function createDefaultGateway(baseUrl: string): Promise<PandaWikiAuthGatew
     listKnowledgeBases: () => knowledge.listKnowledgeBases(),
     getNodeTree: (kbId) => nodes.getNodeTree(kbId),
     getNodeDetail: (kbId, nodeId) => nodes.getNodeDetail(kbId, nodeId),
+    searchKnowledgeBase: (kbId, query) => search.search(kbId, query),
   }
 }
 
@@ -148,6 +156,13 @@ export function createPandaWikiProvider(options: PandaWikiProviderOptions): Pand
     },
   }
 
+  const search: SearchProvider = {
+    search: async (knowledgeBaseId, query) => {
+      const results = await (await ensureGateway()).searchKnowledgeBase(knowledgeBaseId, query)
+      return mapKnowledgeSearchDto(results)
+    },
+  }
+
   return {
     id: "pandawiki",
     type: "pandawiki",
@@ -158,6 +173,7 @@ export function createPandaWikiProvider(options: PandaWikiProviderOptions): Pand
       nodeKnowledgeBaseIds.clear()
     },
     knowledge,
+    search,
     lifecycle: {
       initialize: async () => {
         const nextGateway = await ensureGateway()

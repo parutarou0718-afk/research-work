@@ -713,6 +713,7 @@ function App() {
       <AppLayout
         onSwitchProject={handleSwitchProject}
         pandaWikiKnowledgeProvider={activeProject.source === "pandawiki" ? pandaProvider.knowledge : undefined}
+        pandaWikiSearchProvider={activeProject.source === "pandawiki" ? pandaProvider.search : undefined}
       />
       <CreateProjectDialog
         open={showCreateDialog}

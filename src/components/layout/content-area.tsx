@@ -15,9 +15,18 @@ import { PreviewPanel } from "./preview-panel"
 import { RemoteProjectHome } from "./remote-project-home"
 import { PandaWikiNodeReader } from "@/components/providers/panda-wiki-node-reader"
 import { PandaWikiRemoteChat } from "@/components/providers/panda-wiki-remote-chat"
+import { PandaWikiSearchView } from "@/components/providers/panda-wiki-search-view"
 import { PluginsSection } from "@/components/settings/sections/plugins-section"
+import type { KnowledgeProvider } from "@/services/providers/contracts/KnowledgeProvider"
+import type { SearchProvider } from "@/services/providers/contracts/SearchProvider"
+import { usesPandaWikiSearchSurface } from "@/lib/project-capabilities"
 
-export function ContentArea() {
+interface ContentAreaProps {
+  pandaWikiKnowledgeProvider?: KnowledgeProvider
+  pandaWikiSearchProvider?: SearchProvider
+}
+
+export function ContentArea({ pandaWikiKnowledgeProvider, pandaWikiSearchProvider }: ContentAreaProps) {
   const activeView = useWikiStore((s) => s.activeView)
   const activeProject = useWikiStore((s) => s.activeProject)
 
@@ -43,18 +52,22 @@ export function ContentArea() {
         <div className={activeView === "sources" ? "h-full" : "hidden"}>
           <SourcesView />
         </div>
-        {activeView !== "sources" && <ActiveContent activeView={activeView} />}
+        {activeView !== "sources" && <ActiveContent activeView={activeView} pandaWikiKnowledgeProvider={pandaWikiKnowledgeProvider} pandaWikiSearchProvider={pandaWikiSearchProvider} />}
       </>
     )
   }
 
-  return <ActiveContent activeView={activeView} />
+  return <ActiveContent activeView={activeView} pandaWikiKnowledgeProvider={pandaWikiKnowledgeProvider} pandaWikiSearchProvider={pandaWikiSearchProvider} />
 }
 
 function ActiveContent({
   activeView,
+  pandaWikiKnowledgeProvider,
+  pandaWikiSearchProvider,
 }: {
   activeView: ReturnType<typeof useWikiStore.getState>["activeView"]
+  pandaWikiKnowledgeProvider?: KnowledgeProvider
+  pandaWikiSearchProvider?: SearchProvider
 }) {
   const activePluginRoute = useWikiStore((s) => s.activePluginRoute)
   const activeProject = useWikiStore((s) => s.activeProject)
@@ -79,7 +92,11 @@ function ActiveContent({
     case "lint":
       return <LintView />
     case "search":
-      return <SearchView />
+      return isPandaWikiProject(activeProject) && usesPandaWikiSearchSurface(activeProject)
+        ? pandaWikiKnowledgeProvider && pandaWikiSearchProvider
+          ? <PandaWikiSearchView knowledgeProvider={pandaWikiKnowledgeProvider} searchProvider={pandaWikiSearchProvider} />
+          : <RemoteProjectHome project={activeProject} />
+        : <SearchView />
     case "graph":
       return <GraphView />
     case "plugin": {

@@ -21,6 +21,11 @@ export function usesPandaWikiChatSurface(project: Project | null): boolean {
   return project?.source === "pandawiki" && project.capabilities.chat
 }
 
+/** Remote search is backed by the authenticated PandaWiki API, not local files. */
+export function usesPandaWikiSearchSurface(project: Project | null): boolean {
+  return project?.source === "pandawiki" && project.capabilities.search
+}
+
 export function isPandaWikiChatSettingsAvailable(project: Project | null): boolean {
   return project?.source === "pandawiki"
 }

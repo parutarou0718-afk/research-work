@@ -15,15 +15,17 @@ import { useTranslation } from "react-i18next"
 import { NewIdeaDialog } from "@/components/ideas/new-idea-dialog"
 import { QuickCaptureDialog } from "@/components/ideas/quick-capture-dialog"
 import type { KnowledgeProvider } from "@/services/providers/contracts/KnowledgeProvider"
+import type { SearchProvider } from "@/services/providers/contracts/SearchProvider"
 
 const LEFT_PANEL_COLLAPSED_KEY = "llm-wiki:left-panel-collapsed"
 
 interface AppLayoutProps {
   onSwitchProject: () => void
   pandaWikiKnowledgeProvider?: KnowledgeProvider
+  pandaWikiSearchProvider?: SearchProvider
 }
 
-export function AppLayout({ onSwitchProject, pandaWikiKnowledgeProvider }: AppLayoutProps) {
+export function AppLayout({ onSwitchProject, pandaWikiKnowledgeProvider, pandaWikiSearchProvider }: AppLayoutProps) {
   const { t } = useTranslation()
   const project = useWikiStore((s) => s.project)
   const activeView = useWikiStore((s) => s.activeView)
@@ -172,7 +174,10 @@ export function AppLayout({ onSwitchProject, pandaWikiKnowledgeProvider }: AppLa
           {/* Center: Chat, wiki preview, or tool view */}
           <div className="min-w-0 flex-1 overflow-hidden">
             <ErrorBoundary>
-              <ContentArea />
+              <ContentArea
+                pandaWikiKnowledgeProvider={pandaWikiKnowledgeProvider}
+                pandaWikiSearchProvider={pandaWikiSearchProvider}
+              />
             </ErrorBoundary>
           </div>
 
