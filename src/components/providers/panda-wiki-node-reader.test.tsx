@@ -21,4 +21,24 @@ describe("PandaWikiNodeDocument", () => {
     expect(markup).toContain("Trusted content")
     expect(markup).not.toContain("textarea")
   })
+
+  it("offers a separate remote edit action only when an editor capability is supplied", () => {
+    const markup = renderToStaticMarkup(
+      <PandaWikiNodeDocument
+        node={{
+          id: "node-1",
+          knowledgeBaseId: "kb-1",
+          name: "Remote overview",
+          content: "# Trusted content",
+          parentId: null,
+          type: "file",
+          status: "normal",
+          updatedAt: "2026-07-29",
+        }}
+        onEdit={() => undefined}
+      />,
+    )
+
+    expect(markup).toContain("Edit remote node")
+  })
 })

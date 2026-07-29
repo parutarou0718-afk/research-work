@@ -90,6 +90,14 @@ export class PandaWikiClient {
     })
   }
 
+  put<T>(path: string, body: unknown): Promise<T> {
+    return this.request<T>(path, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    })
+  }
+
   private async request<T>(path: string, init: RequestInit): Promise<T> {
     const headers = new Headers(init.headers)
     headers.set("Accept", "application/json")

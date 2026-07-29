@@ -13,7 +13,7 @@ export const PANDAWIKI_PROJECT_CAPABILITIES: ProjectCapabilities = {
   // the chat API credential outside TypeScript. Other remote capabilities
   // remain unavailable until their server contracts are verified.
   chat: true,
-  editNode: false,
+  editNode: true,
   upload: false,
   conversationHistory: false,
   graph: false,

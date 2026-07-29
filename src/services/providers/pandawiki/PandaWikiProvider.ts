@@ -2,6 +2,7 @@ import type { AuthSession, FileTreeModel, KnowledgeModel, LoginInput, NodeModel 
 import type { AuthProvider } from "../contracts/AuthProvider"
 import type { ProviderBundle } from "../contracts/ProviderBundle"
 import type { SearchProvider } from "../contracts/SearchProvider"
+import type { NodeEditorProvider, NodeUpdateInput } from "../contracts/NodeEditorProvider"
 import type { UserDTO } from "./dto/AuthDTO"
 import { PandaWikiAuthApi } from "./api/auth-api"
 import { PandaWikiKnowledgeApi } from "./api/knowledge-api"
@@ -32,11 +33,13 @@ export interface PandaWikiAuthGateway {
   getNodeTree(kbId: string): Promise<NodeTreeDTO>
   getNodeDetail(kbId: string, nodeId: string): Promise<NodeDTO>
   searchKnowledgeBase(kbId: string, query: string): Promise<KnowledgeSearchResponseDTO>
+  updateNode(input: NodeUpdateInput): Promise<void>
 }
 
 export interface PandaWikiAuthenticationProvider extends ProviderBundle {
   auth: AuthProvider
   search: SearchProvider
+  nodeEditor: NodeEditorProvider
   /**
    * Workspace selection is kept beside the adapter, never inferred from a
    * virtual project's display name or a local filesystem path.
@@ -72,6 +75,7 @@ async function createDefaultGateway(baseUrl: string): Promise<PandaWikiAuthGatew
     getNodeTree: (kbId) => nodes.getNodeTree(kbId),
     getNodeDetail: (kbId, nodeId) => nodes.getNodeDetail(kbId, nodeId),
     searchKnowledgeBase: (kbId, query) => search.search(kbId, query),
+    updateNode: (input) => nodes.updateNode(input),
   }
 }
 
@@ -163,6 +167,12 @@ export function createPandaWikiProvider(options: PandaWikiProviderOptions): Pand
     },
   }
 
+  const nodeEditor: NodeEditorProvider = {
+    updateNode: async (input) => {
+      await (await ensureGateway()).updateNode(input)
+    },
+  }
+
   return {
     id: "pandawiki",
     type: "pandawiki",
@@ -174,6 +184,7 @@ export function createPandaWikiProvider(options: PandaWikiProviderOptions): Pand
     },
     knowledge,
     search,
+    nodeEditor,
     lifecycle: {
       initialize: async () => {
         const nextGateway = await ensureGateway()

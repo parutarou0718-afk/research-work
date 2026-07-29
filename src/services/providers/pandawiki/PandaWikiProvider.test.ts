@@ -12,6 +12,7 @@ function createGateway(): PandaWikiAuthGateway {
     getNodeTree: vi.fn(async (kbId: string) => ({ kb_id: kbId, groups: [{ nav_id: "nav-1", nav_name: "Main", position: 1, list: [{ id: "node-1", name: "Overview", parent_id: "", nav_id: "nav-1", type: "file", status: "normal", position: 1, updated_at: "2026-01-02" }] }] })),
     getNodeDetail: vi.fn(async (kbId: string, nodeId: string) => ({ id: nodeId, kb_id: kbId, name: "Overview", content: "# Overview", parent_id: "", type: "file", status: "normal", updated_at: "2026-01-02" })),
     searchKnowledgeBase: vi.fn(async () => ({ node_result: [{ node_id: "node-1", name: "Overview", summary: "A short summary", emoji: "📚", node_path_names: ["Research", "Overview"] }] })),
+    updateNode: vi.fn(async () => undefined),
   }
 }
 
@@ -79,6 +80,25 @@ describe("PandaWiki authentication provider", () => {
       pathNames: ["Research", "Overview"],
     }])
     expect(gateway.searchKnowledgeBase).toHaveBeenCalledWith("kb-1", "retrieval")
+  })
+
+  it("delegates remote node saves to the server-side document-management permission boundary", async () => {
+    const gateway = createGateway()
+    const provider = createPandaWikiProvider({ baseUrl: "https://wiki.example", createGateway: async () => gateway })
+
+    await provider.nodeEditor.updateNode({
+      knowledgeBaseId: "kb-1",
+      nodeId: "node-1",
+      name: "Updated title",
+      content: "# Updated content",
+    })
+
+    expect(gateway.updateNode).toHaveBeenCalledWith({
+      knowledgeBaseId: "kb-1",
+      nodeId: "node-1",
+      name: "Updated title",
+      content: "# Updated content",
+    })
   })
 
   it("advertises only capabilities backed by a callable client adapter", () => {

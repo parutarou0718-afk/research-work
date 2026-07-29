@@ -19,14 +19,16 @@ import { PandaWikiSearchView } from "@/components/providers/panda-wiki-search-vi
 import { PluginsSection } from "@/components/settings/sections/plugins-section"
 import type { KnowledgeProvider } from "@/services/providers/contracts/KnowledgeProvider"
 import type { SearchProvider } from "@/services/providers/contracts/SearchProvider"
+import type { NodeEditorProvider } from "@/services/providers/contracts/NodeEditorProvider"
 import { usesPandaWikiSearchSurface } from "@/lib/project-capabilities"
 
 interface ContentAreaProps {
   pandaWikiKnowledgeProvider?: KnowledgeProvider
   pandaWikiSearchProvider?: SearchProvider
+  pandaWikiNodeEditor?: NodeEditorProvider
 }
 
-export function ContentArea({ pandaWikiKnowledgeProvider, pandaWikiSearchProvider }: ContentAreaProps) {
+export function ContentArea({ pandaWikiKnowledgeProvider, pandaWikiSearchProvider, pandaWikiNodeEditor }: ContentAreaProps) {
   const activeView = useWikiStore((s) => s.activeView)
   const activeProject = useWikiStore((s) => s.activeProject)
 
@@ -52,22 +54,24 @@ export function ContentArea({ pandaWikiKnowledgeProvider, pandaWikiSearchProvide
         <div className={activeView === "sources" ? "h-full" : "hidden"}>
           <SourcesView />
         </div>
-        {activeView !== "sources" && <ActiveContent activeView={activeView} pandaWikiKnowledgeProvider={pandaWikiKnowledgeProvider} pandaWikiSearchProvider={pandaWikiSearchProvider} />}
+        {activeView !== "sources" && <ActiveContent activeView={activeView} pandaWikiKnowledgeProvider={pandaWikiKnowledgeProvider} pandaWikiSearchProvider={pandaWikiSearchProvider} pandaWikiNodeEditor={pandaWikiNodeEditor} />}
       </>
     )
   }
 
-  return <ActiveContent activeView={activeView} pandaWikiKnowledgeProvider={pandaWikiKnowledgeProvider} pandaWikiSearchProvider={pandaWikiSearchProvider} />
+  return <ActiveContent activeView={activeView} pandaWikiKnowledgeProvider={pandaWikiKnowledgeProvider} pandaWikiSearchProvider={pandaWikiSearchProvider} pandaWikiNodeEditor={pandaWikiNodeEditor} />
 }
 
 function ActiveContent({
   activeView,
   pandaWikiKnowledgeProvider,
   pandaWikiSearchProvider,
+  pandaWikiNodeEditor,
 }: {
   activeView: ReturnType<typeof useWikiStore.getState>["activeView"]
   pandaWikiKnowledgeProvider?: KnowledgeProvider
   pandaWikiSearchProvider?: SearchProvider
+  pandaWikiNodeEditor?: NodeEditorProvider
 }) {
   const activePluginRoute = useWikiStore((s) => s.activePluginRoute)
   const activeProject = useWikiStore((s) => s.activeProject)
@@ -79,7 +83,7 @@ function ActiveContent({
         : <ChatPanel />
     case "wiki":
       return isPandaWikiProject(activeProject)
-        ? <PandaWikiNodeReader />
+        ? <PandaWikiNodeReader knowledgeProvider={pandaWikiKnowledgeProvider} nodeEditor={pandaWikiNodeEditor} />
         : <PreviewPanel />
     case "settings":
       return <SettingsView />
