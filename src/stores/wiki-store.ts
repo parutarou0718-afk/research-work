@@ -429,6 +429,10 @@ interface WikiState {
   providerNodesById: Record<string, NodeModel>
   providerKnowledgeStatus: "idle" | "loading" | "ready" | "error"
   providerKnowledgeError: string | null
+  /** Remote node selection is intentionally separate from local file paths. */
+  providerSelectedNodeId: string | null
+  providerNodeStatus: "idle" | "loading" | "ready" | "error"
+  providerNodeError: string | null
 
   /** Active workspace identity. `project` remains the legacy local-only slot. */
   activeProject: Project | null
@@ -468,6 +472,7 @@ interface WikiState {
   bumpDataVersion: () => void
   loadProviderKnowledge: (provider: KnowledgeProvider) => Promise<void>
   loadProviderNode: (provider: KnowledgeProvider, nodeId: string) => Promise<NodeModel>
+  selectProviderNode: (provider: KnowledgeProvider, nodeId: string) => Promise<NodeModel>
   clearProviderKnowledge: () => void
 }
 
@@ -526,6 +531,9 @@ export const useWikiStore = create<WikiState>((set) => ({
   providerNodesById: {},
   providerKnowledgeStatus: "idle",
   providerKnowledgeError: null,
+  providerSelectedNodeId: null,
+  providerNodeStatus: "idle",
+  providerNodeError: null,
   activeProject: null,
 
   setProject: (project) => set({
@@ -711,6 +719,9 @@ export const useWikiStore = create<WikiState>((set) => ({
         activeProviderKnowledgeBaseId: tree?.knowledgeBaseId ?? knowledgeBases[0]?.id ?? null,
         providerFileTree: tree,
         providerNodesById: {},
+        providerSelectedNodeId: null,
+        providerNodeStatus: "idle",
+        providerNodeError: null,
         providerKnowledgeStatus: "ready",
         providerKnowledgeError: null,
       })
@@ -720,6 +731,9 @@ export const useWikiStore = create<WikiState>((set) => ({
         activeProviderKnowledgeBaseId: null,
         providerFileTree: null,
         providerNodesById: {},
+        providerSelectedNodeId: null,
+        providerNodeStatus: "idle",
+        providerNodeError: null,
         providerKnowledgeStatus: "error",
         providerKnowledgeError: "Unable to load PandaWiki knowledge.",
       })
@@ -730,6 +744,27 @@ export const useWikiStore = create<WikiState>((set) => ({
     set((state) => ({ providerNodesById: { ...state.providerNodesById, [node.id]: node } }))
     return node
   },
+  selectProviderNode: async (provider, nodeId) => {
+    set({
+      providerSelectedNodeId: nodeId,
+      providerNodeStatus: "loading",
+      providerNodeError: null,
+    })
+    try {
+      const node = await provider.getNode(nodeId)
+      set((state) => ({
+        providerNodesById: { ...state.providerNodesById, [node.id]: node },
+        providerNodeStatus: "ready",
+      }))
+      return node
+    } catch (error) {
+      set({
+        providerNodeStatus: "error",
+        providerNodeError: "Unable to load this PandaWiki node.",
+      })
+      throw error
+    }
+  },
   clearProviderKnowledge: () => set({
     providerKnowledgeBases: [],
     activeProviderKnowledgeBaseId: null,
@@ -737,6 +772,9 @@ export const useWikiStore = create<WikiState>((set) => ({
     providerNodesById: {},
     providerKnowledgeStatus: "idle",
     providerKnowledgeError: null,
+    providerSelectedNodeId: null,
+    providerNodeStatus: "idle",
+    providerNodeError: null,
   }),
 }))
 

@@ -14,14 +14,16 @@ import { PanelLeftOpen } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { NewIdeaDialog } from "@/components/ideas/new-idea-dialog"
 import { QuickCaptureDialog } from "@/components/ideas/quick-capture-dialog"
+import type { KnowledgeProvider } from "@/services/providers/contracts/KnowledgeProvider"
 
 const LEFT_PANEL_COLLAPSED_KEY = "llm-wiki:left-panel-collapsed"
 
 interface AppLayoutProps {
   onSwitchProject: () => void
+  pandaWikiKnowledgeProvider?: KnowledgeProvider
 }
 
-export function AppLayout({ onSwitchProject }: AppLayoutProps) {
+export function AppLayout({ onSwitchProject, pandaWikiKnowledgeProvider }: AppLayoutProps) {
   const { t } = useTranslation()
   const project = useWikiStore((s) => s.project)
   const activeView = useWikiStore((s) => s.activeView)
@@ -139,7 +141,10 @@ export function AppLayout({ onSwitchProject }: AppLayoutProps) {
                 style={{ width: leftWidth }}
               >
                 <div className="flex-1 overflow-hidden">
-                  <SidebarPanel onCollapse={toggleLeftPanel} />
+                  <SidebarPanel
+                    onCollapse={toggleLeftPanel}
+                    pandaWikiKnowledgeProvider={pandaWikiKnowledgeProvider}
+                  />
                 </div>
                 <ActivityPanel />
               </div>

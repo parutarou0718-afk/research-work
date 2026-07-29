@@ -31,6 +31,11 @@ export interface PandaWikiAuthGateway {
 
 export interface PandaWikiAuthenticationProvider extends ProviderBundle {
   auth: AuthProvider
+  /**
+   * Workspace selection is kept beside the adapter, never inferred from a
+   * virtual project's display name or a local filesystem path.
+   */
+  selectKnowledgeBase(knowledgeBaseId: string): void
 }
 
 export interface PandaWikiProviderOptions {
@@ -148,6 +153,10 @@ export function createPandaWikiProvider(options: PandaWikiProviderOptions): Pand
     type: "pandawiki",
     capabilities: pandaWikiCapabilities,
     auth,
+    selectKnowledgeBase: (knowledgeBaseId) => {
+      activeKnowledgeBaseId = knowledgeBaseId
+      nodeKnowledgeBaseIds.clear()
+    },
     knowledge,
     lifecycle: {
       initialize: async () => {

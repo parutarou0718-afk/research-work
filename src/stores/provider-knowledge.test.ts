@@ -33,6 +33,19 @@ describe("provider knowledge store", () => {
     expect(useWikiStore.getState().providerNodesById["node-1"]).toMatchObject({ content: "# Overview", knowledgeBaseId: "kb-1" })
   })
 
+  it("tracks a selected remote node without treating its id as a local file path", async () => {
+    const provider = createKnowledgeProvider()
+    await useWikiStore.getState().loadProviderKnowledge(provider)
+
+    await useWikiStore.getState().selectProviderNode(provider, "node-1")
+
+    expect(useWikiStore.getState()).toMatchObject({
+      providerSelectedNodeId: "node-1",
+      providerNodeStatus: "ready",
+      selectedFile: null,
+    })
+  })
+
   it("keeps a clear provider error when the backend load fails", async () => {
     await useWikiStore.getState().loadProviderKnowledge({
       ...createKnowledgeProvider(),

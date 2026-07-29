@@ -5,20 +5,44 @@ import { KnowledgeTree } from "./knowledge-tree"
 import { FileTree } from "./file-tree"
 import { useWikiStore } from "@/stores/wiki-store"
 import { isPandaWikiProject } from "@/domain/projects"
+import type { KnowledgeProvider } from "@/services/providers/contracts/KnowledgeProvider"
+import { PandaWikiNodeTree } from "@/components/providers/panda-wiki-node-tree"
 
 interface SidebarPanelProps {
   onCollapse?: () => void
+  pandaWikiKnowledgeProvider?: KnowledgeProvider
 }
 
-export function SidebarPanel({ onCollapse }: SidebarPanelProps) {
+export function SidebarPanel({ onCollapse, pandaWikiKnowledgeProvider }: SidebarPanelProps) {
   const { t } = useTranslation()
   const activeProject = useWikiStore((s) => s.activeProject)
+  const providerTree = useWikiStore((s) => s.providerFileTree)
+  const providerStatus = useWikiStore((s) => s.providerKnowledgeStatus)
+  const providerError = useWikiStore((s) => s.providerKnowledgeError)
+  const selectedProviderNodeId = useWikiStore((s) => s.providerSelectedNodeId)
+  const selectProviderNode = useWikiStore((s) => s.selectProviderNode)
   const [mode, setMode] = useState<"knowledge" | "files">("knowledge")
 
   if (isPandaWikiProject(activeProject)) {
     return (
-      <div className="flex h-full flex-col p-4 text-sm text-muted-foreground">
-        PandaWiki nodes will appear here when the remote knowledge-tree adapter is connected.
+      <div className="flex h-full flex-col overflow-hidden">
+        <div className="shrink-0 border-b px-3 py-2 text-xs font-semibold uppercase text-muted-foreground">
+          {activeProject.name}
+        </div>
+        {providerStatus === "loading" && <div className="p-4 text-sm text-muted-foreground">Loading PandaWiki nodes…</div>}
+        {providerStatus === "error" && <div role="alert" className="p-4 text-sm text-destructive">{providerError}</div>}
+        {providerStatus === "ready" && !providerTree && <div className="p-4 text-sm text-muted-foreground">No PandaWiki nodes are available.</div>}
+        {providerTree && pandaWikiKnowledgeProvider && (
+          <div className="min-h-0 flex-1 overflow-auto">
+            <PandaWikiNodeTree
+              roots={providerTree.roots}
+              selectedNodeId={selectedProviderNodeId}
+              onSelect={(nodeId) => {
+                void selectProviderNode(pandaWikiKnowledgeProvider, nodeId).catch(() => undefined)
+              }}
+            />
+          </div>
+        )}
       </div>
     )
   }

@@ -46,6 +46,7 @@ function App() {
   const setFileTree = useWikiStore((s) => s.setFileTree)
   const setSelectedFile = useWikiStore((s) => s.setSelectedFile)
   const setActiveView = useWikiStore((s) => s.setActiveView)
+  const loadProviderKnowledge = useWikiStore((s) => s.loadProviderKnowledge)
   const zoomLevel = useZoomStore((s) => s.level)
   const [showCreateDialog, setShowCreateDialog] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -612,6 +613,8 @@ function App() {
     setSelectedFile(null)
     setFileTree([])
     setActiveView("wiki")
+    pandaProvider.selectKnowledgeBase(proj.knowledgeBaseId)
+    await loadProviderKnowledge(pandaProvider.knowledge)
   }
 
   async function handleSelectProject(proj: Project) {
@@ -707,7 +710,10 @@ function App() {
 
   return (
     <>
-      <AppLayout onSwitchProject={handleSwitchProject} />
+      <AppLayout
+        onSwitchProject={handleSwitchProject}
+        pandaWikiKnowledgeProvider={activeProject.source === "pandawiki" ? pandaProvider.knowledge : undefined}
+      />
       <CreateProjectDialog
         open={showCreateDialog}
         onOpenChange={setShowCreateDialog}

@@ -50,6 +50,22 @@ describe("PandaWiki authentication provider", () => {
     await expect(provider.knowledge.getNode("node-1")).resolves.toMatchObject({ id: "node-1", knowledgeBaseId: "kb-1", content: "# Overview" })
   })
 
+  it("loads the tree and node detail from the explicitly selected knowledge base", async () => {
+    const gateway = createGateway()
+    gateway.listKnowledgeBases = vi.fn(async () => ([
+      { id: "kb-1", name: "Research", dataset_id: "dataset-1", created_at: "2026-01-01", updated_at: "2026-01-02" },
+      { id: "kb-2", name: "Legal", dataset_id: "dataset-2", created_at: "2026-01-01", updated_at: "2026-01-02" },
+    ]))
+    const provider = createPandaWikiProvider({ baseUrl: "https://wiki.example", createGateway: async () => gateway })
+
+    provider.selectKnowledgeBase("kb-2")
+    await provider.knowledge.getNodeTree()
+    await provider.knowledge.getNode("node-1")
+
+    expect(gateway.getNodeTree).toHaveBeenCalledWith("kb-2")
+    expect(gateway.getNodeDetail).toHaveBeenCalledWith("kb-2", "node-1")
+  })
+
   it("advertises only capabilities backed by a callable client adapter", () => {
     const provider = createPandaWikiProvider({ baseUrl: "https://wiki.example", createGateway: async () => createGateway() })
     expect(provider.capabilities).toMatchObject({

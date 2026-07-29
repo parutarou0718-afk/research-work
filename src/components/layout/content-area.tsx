@@ -13,6 +13,7 @@ import { isPandaWikiProject } from "@/domain/projects"
 import { isViewAvailable } from "@/lib/project-capabilities"
 import { PreviewPanel } from "./preview-panel"
 import { RemoteProjectHome } from "./remote-project-home"
+import { PandaWikiNodeReader } from "@/components/providers/panda-wiki-node-reader"
 
 export function ContentArea() {
   const activeView = useWikiStore((s) => s.activeView)
@@ -61,7 +62,7 @@ function ActiveContent({
       return <ChatPanel />
     case "wiki":
       return isPandaWikiProject(activeProject)
-        ? <RemoteProjectHome project={activeProject} />
+        ? <PandaWikiNodeReader />
         : <PreviewPanel />
     case "settings":
       return <SettingsView />
