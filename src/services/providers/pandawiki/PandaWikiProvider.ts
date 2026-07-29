@@ -3,11 +3,13 @@ import type { AuthProvider } from "../contracts/AuthProvider"
 import type { ProviderBundle } from "../contracts/ProviderBundle"
 import type { SearchProvider } from "../contracts/SearchProvider"
 import type { NodeEditorProvider, NodeUpdateInput } from "../contracts/NodeEditorProvider"
+import type { DocumentProvider, RemoteDocumentImportInput, RemoteDocumentImportResult } from "../contracts/DocumentProvider"
 import type { UserDTO } from "./dto/AuthDTO"
 import { PandaWikiAuthApi } from "./api/auth-api"
 import { PandaWikiKnowledgeApi } from "./api/knowledge-api"
 import { PandaWikiKnowledgeSearchApi } from "./api/knowledge-search-api"
 import { PandaWikiNodeApi } from "./api/node-api"
+import { PandaWikiDocumentApi } from "./api/document-api"
 import { PandaWikiApiError, PandaWikiClient } from "./api/client"
 import type { KnowledgeDTO } from "./dto/KnowledgeDTO"
 import type { KnowledgeSearchResponseDTO } from "./dto/KnowledgeSearchDTO"
@@ -34,12 +36,14 @@ export interface PandaWikiAuthGateway {
   getNodeDetail(kbId: string, nodeId: string): Promise<NodeDTO>
   searchKnowledgeBase(kbId: string, query: string): Promise<KnowledgeSearchResponseDTO>
   updateNode(input: NodeUpdateInput): Promise<void>
+  importDocument(input: RemoteDocumentImportInput): Promise<RemoteDocumentImportResult>
 }
 
 export interface PandaWikiAuthenticationProvider extends ProviderBundle {
   auth: AuthProvider
   search: SearchProvider
   nodeEditor: NodeEditorProvider
+  documents: DocumentProvider
   /**
    * Workspace selection is kept beside the adapter, never inferred from a
    * virtual project's display name or a local filesystem path.
@@ -66,6 +70,7 @@ async function createDefaultGateway(baseUrl: string): Promise<PandaWikiAuthGatew
   const knowledge = new PandaWikiKnowledgeApi(client)
   const search = new PandaWikiKnowledgeSearchApi(client)
   const nodes = new PandaWikiNodeApi(client)
+  const documents = new PandaWikiDocumentApi(client)
   return {
     setAccessToken: (token) => client.setAccessToken(token),
     login: (account, password) => auth.login(account, password),
@@ -76,6 +81,7 @@ async function createDefaultGateway(baseUrl: string): Promise<PandaWikiAuthGatew
     getNodeDetail: (kbId, nodeId) => nodes.getNodeDetail(kbId, nodeId),
     searchKnowledgeBase: (kbId, query) => search.search(kbId, query),
     updateNode: (input) => nodes.updateNode(input),
+    importDocument: (input) => documents.importDocument(input),
   }
 }
 
@@ -173,6 +179,10 @@ export function createPandaWikiProvider(options: PandaWikiProviderOptions): Pand
     },
   }
 
+  const documents: DocumentProvider = {
+    importDocument: async (input) => (await ensureGateway()).importDocument(input),
+  }
+
   return {
     id: "pandawiki",
     type: "pandawiki",
@@ -185,6 +195,7 @@ export function createPandaWikiProvider(options: PandaWikiProviderOptions): Pand
     knowledge,
     search,
     nodeEditor,
+    documents,
     lifecycle: {
       initialize: async () => {
         const nextGateway = await ensureGateway()

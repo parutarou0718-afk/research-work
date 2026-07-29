@@ -13,6 +13,7 @@ function createGateway(): PandaWikiAuthGateway {
     getNodeDetail: vi.fn(async (kbId: string, nodeId: string) => ({ id: nodeId, kb_id: kbId, name: "Overview", content: "# Overview", parent_id: "", type: "file", status: "normal", updated_at: "2026-01-02" })),
     searchKnowledgeBase: vi.fn(async () => ({ node_result: [{ node_id: "node-1", name: "Overview", summary: "A short summary", emoji: "📚", node_path_names: ["Research", "Overview"] }] })),
     updateNode: vi.fn(async () => undefined),
+    importDocument: vi.fn(async () => ({ nodeId: "node-2", name: "paper.pdf" })),
   }
 }
 
@@ -101,11 +102,30 @@ describe("PandaWiki authentication provider", () => {
     })
   })
 
+  it("delegates remote document imports to the authenticated server adapter", async () => {
+    const gateway = Object.assign(createGateway(), {
+      importDocument: vi.fn(async () => ({ nodeId: "node-2", name: "paper.pdf" })),
+    })
+    const provider = createPandaWikiProvider({ baseUrl: "https://wiki.example", createGateway: async () => gateway })
+    const documents = (provider as unknown as {
+      documents: { importDocument(input: { knowledgeBaseId: string; navigationId: string; name: string; mimeType: string; bytes: Uint8Array }): Promise<{ nodeId: string; name: string }> }
+    }).documents
+
+    await expect(documents.importDocument({
+      knowledgeBaseId: "kb-1",
+      navigationId: "nav-1",
+      name: "paper.pdf",
+      mimeType: "application/pdf",
+      bytes: new Uint8Array([1]),
+    })).resolves.toEqual({ nodeId: "node-2", name: "paper.pdf" })
+    expect(gateway.importDocument).toHaveBeenCalledWith(expect.objectContaining({ knowledgeBaseId: "kb-1" }))
+  })
+
   it("advertises only capabilities backed by a callable client adapter", () => {
     const provider = createPandaWikiProvider({ baseUrl: "https://wiki.example", createGateway: async () => createGateway() })
     expect(provider.capabilities).toMatchObject({
       auth: true,
-      documents: false,
+      documents: true,
       conversations: false,
       search: true,
       graph: false,

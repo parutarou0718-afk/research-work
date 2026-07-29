@@ -16,24 +16,35 @@ import { RemoteProjectHome } from "./remote-project-home"
 import { PandaWikiNodeReader } from "@/components/providers/panda-wiki-node-reader"
 import { PandaWikiRemoteChat } from "@/components/providers/panda-wiki-remote-chat"
 import { PandaWikiSearchView } from "@/components/providers/panda-wiki-search-view"
+import { PandaWikiDocumentsView } from "@/components/providers/panda-wiki-documents-view"
 import { PluginsSection } from "@/components/settings/sections/plugins-section"
 import type { KnowledgeProvider } from "@/services/providers/contracts/KnowledgeProvider"
 import type { SearchProvider } from "@/services/providers/contracts/SearchProvider"
 import type { NodeEditorProvider } from "@/services/providers/contracts/NodeEditorProvider"
-import { usesPandaWikiSearchSurface } from "@/lib/project-capabilities"
+import type { DocumentProvider } from "@/services/providers/contracts/DocumentProvider"
+import { usesPandaWikiDocumentSurface, usesPandaWikiSearchSurface } from "@/lib/project-capabilities"
 
 interface ContentAreaProps {
   pandaWikiKnowledgeProvider?: KnowledgeProvider
   pandaWikiSearchProvider?: SearchProvider
   pandaWikiNodeEditor?: NodeEditorProvider
+  pandaWikiDocumentProvider?: DocumentProvider
 }
 
-export function ContentArea({ pandaWikiKnowledgeProvider, pandaWikiSearchProvider, pandaWikiNodeEditor }: ContentAreaProps) {
+export function ContentArea({ pandaWikiKnowledgeProvider, pandaWikiSearchProvider, pandaWikiNodeEditor, pandaWikiDocumentProvider }: ContentAreaProps) {
   const activeView = useWikiStore((s) => s.activeView)
   const activeProject = useWikiStore((s) => s.activeProject)
 
   if (isPandaWikiProject(activeProject) && !isViewAvailable(activeProject, activeView)) {
     return <RemoteProjectHome project={activeProject} onNavigate={(view) => useWikiStore.getState().setActiveView(view)} />
+  }
+
+  // A remote Documents surface is intentionally separate from local
+  // SourcesView, which owns local project paths, queues, and indexes.
+  if (isPandaWikiProject(activeProject) && usesPandaWikiDocumentSurface(activeProject) && activeView === "sources") {
+    return pandaWikiKnowledgeProvider && pandaWikiDocumentProvider
+      ? <PandaWikiDocumentsView knowledgeProvider={pandaWikiKnowledgeProvider} documentProvider={pandaWikiDocumentProvider} />
+      : <RemoteProjectHome project={activeProject} onNavigate={(view) => useWikiStore.getState().setActiveView(view)} />
   }
 
   // Keep SourcesView mounted after its first visit. Opening a source uses the

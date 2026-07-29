@@ -78,8 +78,8 @@ export class PandaWikiClient {
     this.accessToken = token
   }
 
-  get<T>(path: string): Promise<T> {
-    return this.request<T>(path, { method: "GET" })
+  get<T>(path: string, options: { signal?: AbortSignal } = {}): Promise<T> {
+    return this.request<T>(path, { method: "GET", signal: options.signal })
   }
 
   post<T>(path: string, body: unknown): Promise<T> {
@@ -87,6 +87,18 @@ export class PandaWikiClient {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
+    })
+  }
+
+  /**
+   * Sends a browser/Tauri multipart body without inventing a Content-Type
+   * boundary. Authorization remains centralized in request().
+   */
+  postForm<T>(path: string, body: FormData, options: { signal?: AbortSignal } = {}): Promise<T> {
+    return this.request<T>(path, {
+      method: "POST",
+      body,
+      signal: options.signal,
     })
   }
 

@@ -6,6 +6,7 @@ import {
   showsLocalShellTools,
   isViewAvailable,
   usesPandaWikiChatSurface,
+  usesPandaWikiDocumentSurface,
   usesPandaWikiSearchSurface,
 } from "./project-capabilities"
 
@@ -54,6 +55,17 @@ describe("project capability policy", () => {
     expect(usesPandaWikiSearchSurface(remote)).toBe(false)
   })
 
+  it("exposes Documents only through the remote server surface when upload is verified", () => {
+    const documentProject: PandaWikiVirtualProject = {
+      ...remote,
+      capabilities: { ...remote.capabilities, upload: true },
+    }
+
+    expect(isViewAvailable(documentProject, "sources")).toBe(true)
+    expect(usesPandaWikiDocumentSurface(documentProject)).toBe(true)
+    expect(usesPandaWikiDocumentSurface(remote)).toBe(false)
+  })
+
   it("shows PandaWiki chat configuration only for remote projects", () => {
     expect(isPandaWikiChatSettingsAvailable(remote)).toBe(true)
     expect(isPandaWikiChatSettingsAvailable(null)).toBe(false)
@@ -62,10 +74,10 @@ describe("project capability policy", () => {
   it("exposes only verified PandaWiki shell routes", () => {
     const connected: PandaWikiVirtualProject = {
       ...remote,
-      capabilities: { ...remote.capabilities, search: true, chat: true },
+      capabilities: { ...remote.capabilities, search: true, chat: true, upload: true },
     }
 
-    expect(getRemoteShellViews(connected)).toEqual(["wiki", "search", "chat", "plugin", "settings"])
+    expect(getRemoteShellViews(connected)).toEqual(["wiki", "sources", "search", "chat", "plugin", "settings"])
   })
 
   it("does not show local daemon status for a PandaWiki project", () => {

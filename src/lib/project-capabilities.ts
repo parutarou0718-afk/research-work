@@ -3,11 +3,12 @@ import type { WikiState } from "@/stores/wiki-store"
 
 export type ProjectView = WikiState["activeView"]
 
-export type RemoteShellView = Extract<ProjectView, "wiki" | "search" | "chat" | "plugin" | "settings">
+export type RemoteShellView = Extract<ProjectView, "wiki" | "sources" | "search" | "chat" | "plugin" | "settings">
 
 export function isViewAvailable(project: Project | null, view: ProjectView | "plugin"): boolean {
   if (!project || project.source === "local") return true
   if (view === "settings" || view === "plugin" || view === "wiki" || view === "skills") return true
+  if (view === "sources") return project.capabilities.upload
   if (view === "search") return project.capabilities.search
   if (view === "chat") return project.capabilities.chat
   if (view === "graph") return project.capabilities.graph
@@ -28,6 +29,11 @@ export function usesPandaWikiSearchSurface(project: Project | null): boolean {
   return project?.source === "pandawiki" && project.capabilities.search
 }
 
+/** Remote Documents is server ingestion, never the local Sources workflow. */
+export function usesPandaWikiDocumentSurface(project: Project | null): boolean {
+  return project?.source === "pandawiki" && project.capabilities.upload
+}
+
 export function isPandaWikiChatSettingsAvailable(project: Project | null): boolean {
   return project?.source === "pandawiki"
 }
@@ -41,6 +47,7 @@ export function getRemoteShellViews(project: Project | null): RemoteShellView[] 
   if (project?.source !== "pandawiki") return []
 
   const views: RemoteShellView[] = ["wiki"]
+  if (project.capabilities.upload) views.push("sources")
   if (project.capabilities.search) views.push("search")
   if (project.capabilities.chat) views.push("chat")
   views.push("plugin", "settings")

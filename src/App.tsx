@@ -715,6 +715,7 @@ function App() {
         pandaWikiKnowledgeProvider={activeProject.source === "pandawiki" ? pandaProvider.knowledge : undefined}
         pandaWikiSearchProvider={activeProject.source === "pandawiki" ? pandaProvider.search : undefined}
         pandaWikiNodeEditor={activeProject.source === "pandawiki" ? pandaProvider.nodeEditor : undefined}
+        pandaWikiDocumentProvider={activeProject.source === "pandawiki" ? pandaProvider.documents : undefined}
       />
       <CreateProjectDialog
         open={showCreateDialog}

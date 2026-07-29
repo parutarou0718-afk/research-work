@@ -2,7 +2,7 @@ import type { ProviderCapabilities } from "../contracts/ProviderCapabilities"
 
 export const pandaWikiCapabilities: ProviderCapabilities = {
   auth: true,
-  documents: false,
+  documents: true,
   conversations: false,
   search: true,
   graph: false,

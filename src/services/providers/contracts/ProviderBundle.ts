@@ -4,6 +4,7 @@ import type { ProviderCapabilities } from "./ProviderCapabilities"
 import type { ProviderLifecycle } from "./ProviderLifecycle"
 import type { SearchProvider } from "./SearchProvider"
 import type { NodeEditorProvider } from "./NodeEditorProvider"
+import type { DocumentProvider } from "./DocumentProvider"
 
 export interface ProviderBundle {
   id: string
@@ -14,4 +15,5 @@ export interface ProviderBundle {
   knowledge: KnowledgeProvider
   search?: SearchProvider
   nodeEditor?: NodeEditorProvider
+  documents?: DocumentProvider
 }

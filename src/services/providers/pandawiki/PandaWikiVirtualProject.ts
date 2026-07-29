@@ -14,7 +14,7 @@ export const PANDAWIKI_PROJECT_CAPABILITIES: ProjectCapabilities = {
   // remain unavailable until their server contracts are verified.
   chat: true,
   editNode: true,
-  upload: false,
+  upload: true,
   conversationHistory: false,
   graph: false,
   filesystem: false,

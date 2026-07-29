@@ -17,6 +17,7 @@ import { QuickCaptureDialog } from "@/components/ideas/quick-capture-dialog"
 import type { KnowledgeProvider } from "@/services/providers/contracts/KnowledgeProvider"
 import type { SearchProvider } from "@/services/providers/contracts/SearchProvider"
 import type { NodeEditorProvider } from "@/services/providers/contracts/NodeEditorProvider"
+import type { DocumentProvider } from "@/services/providers/contracts/DocumentProvider"
 
 const LEFT_PANEL_COLLAPSED_KEY = "llm-wiki:left-panel-collapsed"
 
@@ -25,9 +26,10 @@ interface AppLayoutProps {
   pandaWikiKnowledgeProvider?: KnowledgeProvider
   pandaWikiSearchProvider?: SearchProvider
   pandaWikiNodeEditor?: NodeEditorProvider
+  pandaWikiDocumentProvider?: DocumentProvider
 }
 
-export function AppLayout({ onSwitchProject, pandaWikiKnowledgeProvider, pandaWikiSearchProvider, pandaWikiNodeEditor }: AppLayoutProps) {
+export function AppLayout({ onSwitchProject, pandaWikiKnowledgeProvider, pandaWikiSearchProvider, pandaWikiNodeEditor, pandaWikiDocumentProvider }: AppLayoutProps) {
   const { t } = useTranslation()
   const project = useWikiStore((s) => s.project)
   const activeView = useWikiStore((s) => s.activeView)
@@ -180,6 +182,7 @@ export function AppLayout({ onSwitchProject, pandaWikiKnowledgeProvider, pandaWi
                 pandaWikiKnowledgeProvider={pandaWikiKnowledgeProvider}
                 pandaWikiSearchProvider={pandaWikiSearchProvider}
                 pandaWikiNodeEditor={pandaWikiNodeEditor}
+                pandaWikiDocumentProvider={pandaWikiDocumentProvider}
               />
             </ErrorBoundary>
           </div>
