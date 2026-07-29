@@ -9,6 +9,21 @@ function jsonResponse(data: unknown): Response {
 }
 
 describe("PandaWiki node API", () => {
+  it("accepts PandaWiki's successful empty update response", async () => {
+    // PandaWiki's UpdateNodeDetail responds with a nil Go value. Its
+    // `json:\"data,omitempty\"` tag therefore omits `data` entirely.
+    const fetcher = vi.fn(async () => jsonResponse(undefined))
+    const client = new PandaWikiClient("https://wiki.example", fetcher)
+    const api = new PandaWikiNodeApi(client)
+
+    await expect(api.updateNode({
+      knowledgeBaseId: "kb-1",
+      nodeId: "node-1",
+      name: "Updated title",
+      content: "# Updated content",
+    })).resolves.toBeUndefined()
+  })
+
   it("updates only the selected remote node fields through the authenticated endpoint", async () => {
     const fetcher = vi.fn(async () => jsonResponse(null))
     const client = new PandaWikiClient("https://wiki.example", fetcher)

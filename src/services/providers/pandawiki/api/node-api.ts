@@ -21,7 +21,7 @@ export class PandaWikiNodeApi {
   }
 
   async updateNode(input: PandaWikiNodeUpdateInput): Promise<void> {
-    await this.client.put<null>("/api/v1/node/detail", {
+    await this.client.putVoid("/api/v1/node/detail", {
       kb_id: input.knowledgeBaseId,
       id: input.nodeId,
       name: input.name,

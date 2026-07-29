@@ -98,7 +98,19 @@ export class PandaWikiClient {
     })
   }
 
-  private async request<T>(path: string, init: RequestInit): Promise<T> {
+  putVoid(path: string, body: unknown): Promise<void> {
+    return this.request<void>(path, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }, { allowEmptySuccessData: true })
+  }
+
+  private async request<T>(
+    path: string,
+    init: RequestInit,
+    options: { allowEmptySuccessData?: boolean } = {},
+  ): Promise<T> {
     const headers = new Headers(init.headers)
     headers.set("Accept", "application/json")
     if (this.accessToken) headers.set("Authorization", `Bearer ${this.accessToken}`)
@@ -126,7 +138,10 @@ export class PandaWikiClient {
     if (!response.ok || !envelope.success) {
       throw new PandaWikiApiError(toErrorKind(response.status, envelope.code), response.status)
     }
-    if (envelope.data === undefined) throw new PandaWikiApiError("invalid-response", response.status)
+    if (envelope.data === undefined) {
+      if (options.allowEmptySuccessData) return undefined as T
+      throw new PandaWikiApiError("invalid-response", response.status)
+    }
     return envelope.data
   }
 }
