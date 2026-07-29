@@ -9,7 +9,10 @@ import type { KnowledgeModel } from "@/types/wiki"
 export const PANDAWIKI_PROJECT_CAPABILITIES: ProjectCapabilities = {
   readKnowledge: true,
   search: false,
-  chat: false,
+  // The OpenAI-compatible, Rust-backed adapter is implemented and keeps
+  // the chat API credential outside TypeScript. Other remote capabilities
+  // remain unavailable until their server contracts are verified.
+  chat: true,
   editNode: false,
   upload: false,
   conversationHistory: false,

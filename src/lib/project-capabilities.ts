@@ -11,3 +11,16 @@ export function isViewAvailable(project: Project | null, view: ProjectView | "pl
   if (view === "graph") return project.capabilities.graph
   return false
 }
+
+/**
+ * Remote knowledge-base chat has a dedicated, credential-safe UI. It must
+ * never fall through to the local ChatPanel, whose tools and persistence
+ * require a filesystem-backed project.
+ */
+export function usesPandaWikiChatSurface(project: Project | null): boolean {
+  return project?.source === "pandawiki" && project.capabilities.chat
+}
+
+export function isPandaWikiChatSettingsAvailable(project: Project | null): boolean {
+  return project?.source === "pandawiki"
+}

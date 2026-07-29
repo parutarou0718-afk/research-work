@@ -46,6 +46,8 @@ import { ChangelogSection } from "./sections/changelog-section"
 import { MaintenanceSection } from "./sections/maintenance-section"
 import { AboutSection } from "./sections/about-section"
 import { PluginsSection } from "./sections/plugins-section"
+import { PandaWikiChatSection } from "./sections/pandawiki-chat-section"
+import { isPandaWikiChatSettingsAvailable } from "@/lib/project-capabilities"
 
 type CategoryId =
   | "general"
@@ -64,6 +66,7 @@ type CategoryId =
   | "changelog"
   | "about"
   | "plugins"
+  | "pandawiki-chat"
 
 interface Category {
   id: CategoryId
@@ -91,6 +94,7 @@ const CATEGORIES: Category[] = [
   { id: "changelog", labelKey: "settings.categories.changelog", icon: History },
   { id: "about", labelKey: "settings.categories.about", icon: Info },
   { id: "plugins", labelKey: "settings.categories.plugins", icon: Puzzle },
+  { id: "pandawiki-chat", labelKey: "PandaWiki chat", icon: Server },
 ]
 
 function initialDraft(
@@ -193,6 +197,7 @@ function initialDraft(
 export function SettingsView() {
   const { t } = useTranslation()
   const project = useWikiStore((s) => s.project)
+  const activeProject = useWikiStore((s) => s.activeProject)
   const llmConfig = useWikiStore((s) => s.llmConfig)
   const setLlmConfig = useWikiStore((s) => s.setLlmConfig)
   const embeddingConfig = useWikiStore((s) => s.embeddingConfig)
@@ -657,8 +662,15 @@ export function SettingsView() {
         return <AboutSection />
       case "plugins":
         return <PluginsSection />
+      case "pandawiki-chat":
+        return <PandaWikiChatSection />
     }
   }, [active, draft, setDraft])
+
+  const availableCategories = useMemo(
+    () => CATEGORIES.filter((category) => category.id !== "pandawiki-chat" || isPandaWikiChatSettingsAvailable(activeProject)),
+    [activeProject],
+  )
 
   return (
     <div className="flex h-full overflow-hidden">
@@ -669,7 +681,7 @@ export function SettingsView() {
           {t("settings.title")}
         </div>
         <nav className="flex-1 overflow-y-auto px-2 pb-3">
-          {CATEGORIES.map((c) => {
+          {availableCategories.map((c) => {
             const Icon = c.icon
             const isActive = c.id === active
             // Mirror the gear-icon dot inside the settings sidebar
@@ -720,7 +732,7 @@ export function SettingsView() {
         {/* Global Save bar hidden for sections that persist inline:
             - "llm" saves per-row on every edit (independent per-preset state)
             - "about" has no draft-bound fields */}
-        {active !== "about" && active !== "llm" && active !== "plugins" && (
+        {active !== "about" && active !== "llm" && active !== "plugins" && active !== "pandawiki-chat" && (
           <div className="shrink-0 border-t bg-background/80 backdrop-blur px-8 py-3">
             <div className="mx-auto flex max-w-2xl items-center justify-between gap-4">
               <p className={`text-xs ${saveError ? "text-destructive" : "text-muted-foreground"}`}>

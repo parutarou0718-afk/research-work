@@ -16,7 +16,7 @@ describe("PandaWiki virtual projects", () => {
       source: "pandawiki",
       knowledgeBaseId: "kb-1",
       scopeKey: "lan-prod:kb-1",
-      capabilities: { filesystem: false, readKnowledge: true, search: false, chat: false },
+      capabilities: { filesystem: false, readKnowledge: true, search: false, chat: true },
     })
     expect("path" in project).toBe(false)
   })

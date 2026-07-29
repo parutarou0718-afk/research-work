@@ -10,10 +10,11 @@ import { SearchView } from "@/components/search/search-view"
 import { GraphView } from "@/components/graph/graph-view"
 import { usePlugins } from "@/core/plugins/usePlugins"
 import { isPandaWikiProject } from "@/domain/projects"
-import { isViewAvailable } from "@/lib/project-capabilities"
+import { isViewAvailable, usesPandaWikiChatSurface } from "@/lib/project-capabilities"
 import { PreviewPanel } from "./preview-panel"
 import { RemoteProjectHome } from "./remote-project-home"
 import { PandaWikiNodeReader } from "@/components/providers/panda-wiki-node-reader"
+import { PandaWikiRemoteChat } from "@/components/providers/panda-wiki-remote-chat"
 import { PluginsSection } from "@/components/settings/sections/plugins-section"
 
 export function ContentArea() {
@@ -60,7 +61,9 @@ function ActiveContent({
   const { getPluginByRoute, host } = usePlugins()
   switch (activeView) {
     case "chat":
-      return <ChatPanel />
+      return usesPandaWikiChatSurface(activeProject)
+        ? <PandaWikiRemoteChat />
+        : <ChatPanel />
     case "wiki":
       return isPandaWikiProject(activeProject)
         ? <PandaWikiNodeReader />
