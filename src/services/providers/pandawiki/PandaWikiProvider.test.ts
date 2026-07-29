@@ -14,6 +14,7 @@ function createGateway(): PandaWikiAuthGateway {
     searchKnowledgeBase: vi.fn(async () => ({ node_result: [{ node_id: "node-1", name: "Overview", summary: "A short summary", emoji: "📚", node_path_names: ["Research", "Overview"] }] })),
     updateNode: vi.fn(async () => undefined),
     importDocument: vi.fn(async () => ({ nodeId: "node-2", name: "paper.pdf" })),
+    getKnowledgeGraph: vi.fn(async () => ({ entities: [], relations: [] })),
   }
 }
 
@@ -119,6 +120,23 @@ describe("PandaWiki authentication provider", () => {
       bytes: new Uint8Array([1]),
     })).resolves.toEqual({ nodeId: "node-2", name: "paper.pdf" })
     expect(gateway.importDocument).toHaveBeenCalledWith(expect.objectContaining({ knowledgeBaseId: "kb-1" }))
+  })
+
+  it("maps graph data through the server-only graph provider boundary", async () => {
+    const gateway = createGateway()
+    const provider = createPandaWikiProvider({ baseUrl: "https://wiki.example", createGateway: async () => gateway })
+
+    await expect(provider.graph.getGraph("kb-1")).resolves.toEqual({ entities: [], relations: [] })
+    expect(gateway.getKnowledgeGraph).toHaveBeenCalledWith("kb-1")
+  })
+
+  it("only advertises graph after the connected server accepts the authenticated graph contract", async () => {
+    const gateway = createGateway()
+    const provider = createPandaWikiProvider({ baseUrl: "https://wiki.example", createGateway: async () => gateway })
+
+    expect(provider.capabilities.graph).toBe(false)
+    await provider.knowledge.listKnowledgeBases()
+    expect(provider.capabilities.graph).toBe(true)
   })
 
   it("advertises only capabilities backed by a callable client adapter", () => {

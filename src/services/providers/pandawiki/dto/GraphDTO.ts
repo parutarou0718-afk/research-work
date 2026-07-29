@@ -6,7 +6,19 @@ export interface EntityDTO {
 
 export interface RelationDTO {
   id: string
-  source_id: string
-  target_id: string
+  source_entity_id: string
+  target_entity_id: string
   type: string
+  evidence: GraphEvidenceDTO[]
+}
+
+export interface GraphEvidenceDTO {
+  node_id: string
+  node_release_id: string
+  excerpt: string
+}
+
+export interface KnowledgeGraphDTO {
+  entities: EntityDTO[]
+  relations: RelationDTO[]
 }

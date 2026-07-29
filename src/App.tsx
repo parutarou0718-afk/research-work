@@ -461,7 +461,9 @@ function App() {
         if (cancelled) return
         const connectionId = connectionIdFromServerUrl(providerServerUrl)
         setPandaWikiProjects(knowledgeBases.map((knowledgeBase) =>
-          mapKnowledgeBaseToVirtualProject(connectionId, knowledgeBase),
+          mapKnowledgeBaseToVirtualProject(connectionId, knowledgeBase, {
+            graph: pandaProvider.capabilities.graph,
+          }),
         ))
       })
       .catch(() => {
@@ -716,6 +718,7 @@ function App() {
         pandaWikiSearchProvider={activeProject.source === "pandawiki" ? pandaProvider.search : undefined}
         pandaWikiNodeEditor={activeProject.source === "pandawiki" ? pandaProvider.nodeEditor : undefined}
         pandaWikiDocumentProvider={activeProject.source === "pandawiki" ? pandaProvider.documents : undefined}
+        pandaWikiGraphProvider={activeProject.source === "pandawiki" ? pandaProvider.graph : undefined}
       />
       <CreateProjectDialog
         open={showCreateDialog}

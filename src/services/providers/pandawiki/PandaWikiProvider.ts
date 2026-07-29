@@ -1,15 +1,17 @@
-import type { AuthSession, FileTreeModel, KnowledgeModel, LoginInput, NodeModel } from "@/types/wiki"
+import type { AuthSession, FileTreeModel, KnowledgeGraphModel, KnowledgeModel, LoginInput, NodeModel } from "@/types/wiki"
 import type { AuthProvider } from "../contracts/AuthProvider"
 import type { ProviderBundle } from "../contracts/ProviderBundle"
 import type { SearchProvider } from "../contracts/SearchProvider"
 import type { NodeEditorProvider, NodeUpdateInput } from "../contracts/NodeEditorProvider"
 import type { DocumentProvider, RemoteDocumentImportInput, RemoteDocumentImportResult } from "../contracts/DocumentProvider"
+import type { GraphProvider } from "../contracts/GraphProvider"
 import type { UserDTO } from "./dto/AuthDTO"
 import { PandaWikiAuthApi } from "./api/auth-api"
 import { PandaWikiKnowledgeApi } from "./api/knowledge-api"
 import { PandaWikiKnowledgeSearchApi } from "./api/knowledge-search-api"
 import { PandaWikiNodeApi } from "./api/node-api"
 import { PandaWikiDocumentApi } from "./api/document-api"
+import { PandaWikiKnowledgeGraphApi } from "./api/knowledge-graph-api"
 import { PandaWikiApiError, PandaWikiClient } from "./api/client"
 import type { KnowledgeDTO } from "./dto/KnowledgeDTO"
 import type { KnowledgeSearchResponseDTO } from "./dto/KnowledgeSearchDTO"
@@ -17,6 +19,7 @@ import type { NodeDTO, NodeTreeDTO } from "./dto/NodeDTO"
 import { mapKnowledgeDto } from "./mapper/KnowledgeMapper"
 import { mapKnowledgeSearchDto } from "./mapper/KnowledgeSearchMapper"
 import { mapNodeDto, mapNodeTreeDto } from "./mapper/NodeMapper"
+import { mapKnowledgeGraphDto } from "./mapper/GraphMapper"
 import type { SessionStore } from "./session/SessionStore"
 import { createDefaultSessionStore } from "./session/TauriSessionStore"
 import { pandaWikiCapabilities } from "./capabilities"
@@ -37,6 +40,7 @@ export interface PandaWikiAuthGateway {
   searchKnowledgeBase(kbId: string, query: string): Promise<KnowledgeSearchResponseDTO>
   updateNode(input: NodeUpdateInput): Promise<void>
   importDocument(input: RemoteDocumentImportInput): Promise<RemoteDocumentImportResult>
+  getKnowledgeGraph(kbId: string): Promise<import("./dto/GraphDTO").KnowledgeGraphDTO>
 }
 
 export interface PandaWikiAuthenticationProvider extends ProviderBundle {
@@ -44,6 +48,7 @@ export interface PandaWikiAuthenticationProvider extends ProviderBundle {
   search: SearchProvider
   nodeEditor: NodeEditorProvider
   documents: DocumentProvider
+  graph: GraphProvider
   /**
    * Workspace selection is kept beside the adapter, never inferred from a
    * virtual project's display name or a local filesystem path.
@@ -71,6 +76,7 @@ async function createDefaultGateway(baseUrl: string): Promise<PandaWikiAuthGatew
   const search = new PandaWikiKnowledgeSearchApi(client)
   const nodes = new PandaWikiNodeApi(client)
   const documents = new PandaWikiDocumentApi(client)
+  const graph = new PandaWikiKnowledgeGraphApi(client)
   return {
     setAccessToken: (token) => client.setAccessToken(token),
     login: (account, password) => auth.login(account, password),
@@ -82,6 +88,7 @@ async function createDefaultGateway(baseUrl: string): Promise<PandaWikiAuthGatew
     searchKnowledgeBase: (kbId, query) => search.search(kbId, query),
     updateNode: (input) => nodes.updateNode(input),
     importDocument: (input) => documents.importDocument(input),
+    getKnowledgeGraph: (kbId) => graph.getGraph(kbId),
   }
 }
 
@@ -97,6 +104,8 @@ export function createPandaWikiProvider(options: PandaWikiProviderOptions): Pand
   let activeSession: AuthSession | null = null
   let activeKnowledgeBaseId: string | null = null
   const nodeKnowledgeBaseIds = new Map<string, string>()
+  const capabilities = { ...pandaWikiCapabilities }
+  let graphCapabilityChecked = false
 
   const ensureGateway = async (serverUrl = baseUrl): Promise<PandaWikiAuthGateway> => {
     if (!gateway || serverUrl !== baseUrl) {
@@ -150,6 +159,18 @@ export function createPandaWikiProvider(options: PandaWikiProviderOptions): Pand
       if (!activeKnowledgeBaseId || !mapped.some((knowledgeBase) => knowledgeBase.id === activeKnowledgeBaseId)) {
         activeKnowledgeBaseId = mapped[0]?.id ?? null
       }
+      // Capability flags describe callable adapters in the connected server,
+      // rather than functionality merely compiled into this desktop build.
+      // A missing graph endpoint is expected on pre-graph PandaWiki versions.
+      if (!graphCapabilityChecked && mapped[0]) {
+        graphCapabilityChecked = true
+        try {
+          await (await ensureGateway()).getKnowledgeGraph(mapped[0].id)
+          capabilities.graph = true
+        } catch {
+          capabilities.graph = false
+        }
+      }
       return mapped
     },
     getNodeTree: async (): Promise<FileTreeModel> => {
@@ -183,10 +204,15 @@ export function createPandaWikiProvider(options: PandaWikiProviderOptions): Pand
     importDocument: async (input) => (await ensureGateway()).importDocument(input),
   }
 
+  const graph: GraphProvider = {
+    getGraph: async (knowledgeBaseId: string): Promise<KnowledgeGraphModel> =>
+      mapKnowledgeGraphDto(await (await ensureGateway()).getKnowledgeGraph(knowledgeBaseId)),
+  }
+
   return {
     id: "pandawiki",
     type: "pandawiki",
-    capabilities: pandaWikiCapabilities,
+    capabilities,
     auth,
     selectKnowledgeBase: (knowledgeBaseId) => {
       activeKnowledgeBaseId = knowledgeBaseId
@@ -196,6 +222,7 @@ export function createPandaWikiProvider(options: PandaWikiProviderOptions): Pand
     search,
     nodeEditor,
     documents,
+    graph,
     lifecycle: {
       initialize: async () => {
         const nextGateway = await ensureGateway()

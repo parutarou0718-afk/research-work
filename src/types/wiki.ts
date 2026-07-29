@@ -122,6 +122,17 @@ export interface RelationModel {
   type: string
 }
 
+export interface GraphEvidenceModel {
+  nodeId: string
+  nodeReleaseId: string
+  excerpt: string
+}
+
+export interface KnowledgeGraphModel {
+  entities: EntityModel[]
+  relations: Array<RelationModel & { evidence: GraphEvidenceModel[] }>
+}
+
 export interface TemplateConfig {
   id: string
   name: string

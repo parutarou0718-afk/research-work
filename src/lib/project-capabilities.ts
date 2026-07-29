@@ -34,6 +34,11 @@ export function usesPandaWikiDocumentSurface(project: Project | null): boolean {
   return project?.source === "pandawiki" && project.capabilities.upload
 }
 
+/** Graph data is always fetched from PandaWiki, never built from local files. */
+export function usesPandaWikiGraphSurface(project: Project | null): boolean {
+  return project?.source === "pandawiki" && project.capabilities.graph
+}
+
 export function isPandaWikiChatSettingsAvailable(project: Project | null): boolean {
   return project?.source === "pandawiki"
 }

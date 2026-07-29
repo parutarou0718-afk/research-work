@@ -17,21 +17,24 @@ import { PandaWikiNodeReader } from "@/components/providers/panda-wiki-node-read
 import { PandaWikiRemoteChat } from "@/components/providers/panda-wiki-remote-chat"
 import { PandaWikiSearchView } from "@/components/providers/panda-wiki-search-view"
 import { PandaWikiDocumentsView } from "@/components/providers/panda-wiki-documents-view"
+import { PandaWikiGraphView } from "@/components/providers/panda-wiki-graph-view"
 import { PluginsSection } from "@/components/settings/sections/plugins-section"
 import type { KnowledgeProvider } from "@/services/providers/contracts/KnowledgeProvider"
 import type { SearchProvider } from "@/services/providers/contracts/SearchProvider"
 import type { NodeEditorProvider } from "@/services/providers/contracts/NodeEditorProvider"
 import type { DocumentProvider } from "@/services/providers/contracts/DocumentProvider"
-import { usesPandaWikiDocumentSurface, usesPandaWikiSearchSurface } from "@/lib/project-capabilities"
+import type { GraphProvider } from "@/services/providers/contracts/GraphProvider"
+import { usesPandaWikiDocumentSurface, usesPandaWikiGraphSurface, usesPandaWikiSearchSurface } from "@/lib/project-capabilities"
 
 interface ContentAreaProps {
   pandaWikiKnowledgeProvider?: KnowledgeProvider
   pandaWikiSearchProvider?: SearchProvider
   pandaWikiNodeEditor?: NodeEditorProvider
   pandaWikiDocumentProvider?: DocumentProvider
+  pandaWikiGraphProvider?: GraphProvider
 }
 
-export function ContentArea({ pandaWikiKnowledgeProvider, pandaWikiSearchProvider, pandaWikiNodeEditor, pandaWikiDocumentProvider }: ContentAreaProps) {
+export function ContentArea({ pandaWikiKnowledgeProvider, pandaWikiSearchProvider, pandaWikiNodeEditor, pandaWikiDocumentProvider, pandaWikiGraphProvider }: ContentAreaProps) {
   const activeView = useWikiStore((s) => s.activeView)
   const activeProject = useWikiStore((s) => s.activeProject)
 
@@ -65,12 +68,12 @@ export function ContentArea({ pandaWikiKnowledgeProvider, pandaWikiSearchProvide
         <div className={activeView === "sources" ? "h-full" : "hidden"}>
           <SourcesView />
         </div>
-        {activeView !== "sources" && <ActiveContent activeView={activeView} pandaWikiKnowledgeProvider={pandaWikiKnowledgeProvider} pandaWikiSearchProvider={pandaWikiSearchProvider} pandaWikiNodeEditor={pandaWikiNodeEditor} />}
+        {activeView !== "sources" && <ActiveContent activeView={activeView} pandaWikiKnowledgeProvider={pandaWikiKnowledgeProvider} pandaWikiSearchProvider={pandaWikiSearchProvider} pandaWikiNodeEditor={pandaWikiNodeEditor} pandaWikiGraphProvider={pandaWikiGraphProvider} />}
       </>
     )
   }
 
-  return <ActiveContent activeView={activeView} pandaWikiKnowledgeProvider={pandaWikiKnowledgeProvider} pandaWikiSearchProvider={pandaWikiSearchProvider} pandaWikiNodeEditor={pandaWikiNodeEditor} />
+  return <ActiveContent activeView={activeView} pandaWikiKnowledgeProvider={pandaWikiKnowledgeProvider} pandaWikiSearchProvider={pandaWikiSearchProvider} pandaWikiNodeEditor={pandaWikiNodeEditor} pandaWikiGraphProvider={pandaWikiGraphProvider} />
 }
 
 function ActiveContent({
@@ -78,11 +81,13 @@ function ActiveContent({
   pandaWikiKnowledgeProvider,
   pandaWikiSearchProvider,
   pandaWikiNodeEditor,
+  pandaWikiGraphProvider,
 }: {
   activeView: ReturnType<typeof useWikiStore.getState>["activeView"]
   pandaWikiKnowledgeProvider?: KnowledgeProvider
   pandaWikiSearchProvider?: SearchProvider
   pandaWikiNodeEditor?: NodeEditorProvider
+  pandaWikiGraphProvider?: GraphProvider
 }) {
   const activePluginRoute = useWikiStore((s) => s.activePluginRoute)
   const activeProject = useWikiStore((s) => s.activeProject)
@@ -113,7 +118,9 @@ function ActiveContent({
           : <RemoteProjectHome project={activeProject} onNavigate={(view) => useWikiStore.getState().setActiveView(view)} />
         : <SearchView />
     case "graph":
-      return <GraphView />
+      return isPandaWikiProject(activeProject) && usesPandaWikiGraphSurface(activeProject)
+        ? <PandaWikiGraphView graphProvider={pandaWikiGraphProvider} knowledgeProvider={pandaWikiKnowledgeProvider} />
+        : <GraphView />
     case "plugin": {
       const plugin = activePluginRoute ? getPluginByRoute(activePluginRoute) : undefined
       const PluginPage = plugin?.page

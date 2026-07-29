@@ -23,6 +23,7 @@ export const PANDAWIKI_PROJECT_CAPABILITIES: ProjectCapabilities = {
 export function mapKnowledgeBaseToVirtualProject(
   connectionId: string,
   knowledgeBase: KnowledgeModel,
+  capabilities: Partial<ProjectCapabilities> = {},
 ): PandaWikiVirtualProject {
   return {
     id: buildPandaWikiProjectId(connectionId, knowledgeBase.id),
@@ -31,6 +32,6 @@ export function mapKnowledgeBaseToVirtualProject(
     connectionId,
     knowledgeBaseId: knowledgeBase.id,
     scopeKey: buildProviderScopeKey(connectionId, knowledgeBase.id),
-    capabilities: { ...PANDAWIKI_PROJECT_CAPABILITIES },
+    capabilities: { ...PANDAWIKI_PROJECT_CAPABILITIES, ...capabilities },
   }
 }

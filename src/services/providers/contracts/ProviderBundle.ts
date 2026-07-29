@@ -5,6 +5,7 @@ import type { ProviderLifecycle } from "./ProviderLifecycle"
 import type { SearchProvider } from "./SearchProvider"
 import type { NodeEditorProvider } from "./NodeEditorProvider"
 import type { DocumentProvider } from "./DocumentProvider"
+import type { GraphProvider } from "./GraphProvider"
 
 export interface ProviderBundle {
   id: string
@@ -16,4 +17,5 @@ export interface ProviderBundle {
   search?: SearchProvider
   nodeEditor?: NodeEditorProvider
   documents?: DocumentProvider
+  graph?: GraphProvider
 }

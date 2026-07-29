@@ -61,6 +61,6 @@ describe("PandaWiki mappers", () => {
     expect(mapDocumentDto({ id: "d", kb_id: "kb", name: "file.pdf", status: "ready", updated_at: "2026-07-24T00:00:00.000Z" }).status).toBe("ready")
     expect(mapUploadStatusDto({ status: "processing" })).toBe("processing")
     expect(mapEntityDto({ id: "e", name: "Alice", type: "person" })).toEqual({ id: "e", name: "Alice", type: "person" })
-    expect(mapRelationDto({ id: "r", source_id: "e", target_id: "f", type: "knows" })).toEqual({ id: "r", sourceId: "e", targetId: "f", type: "knows" })
+    expect(mapRelationDto({ id: "r", source_entity_id: "e", target_entity_id: "f", type: "knows", evidence: [] })).toEqual({ id: "r", sourceId: "e", targetId: "f", type: "knows" })
   })
 })
