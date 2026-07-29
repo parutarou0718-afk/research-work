@@ -1,8 +1,18 @@
-export interface PluginProject {
+export interface LocalPluginProject {
   id: string
   name: string
+  source: "local"
   path: string
 }
+
+export interface PandaWikiPluginProject {
+  id: string
+  name: string
+  source: "pandawiki"
+  scopeKey: string
+}
+
+export type PluginProject = LocalPluginProject | PandaWikiPluginProject
 
 export interface PluginProjectApi {
   current: () => PluginProject | null

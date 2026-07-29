@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest"
 import { createPluginHost } from "./PluginHost"
 
-const project = { id: "project-1", name: "Project", path: "/workspace/project" }
+const project = { id: "project-1", name: "Project", source: "local" as const, path: "/workspace/project" }
 
 function createHost() {
   const files = new Map<string, string>()
@@ -49,6 +49,46 @@ describe("PluginHost", () => {
 
     expect(host.settings.forPlugin("official.submission-management").get("view")).toBe("table")
     expect(host.settings.forPlugin("official.meetings").get("view")).toBe("calendar")
+  })
+
+  it("stores PandaWiki plugin records by remote scope without using filesystem paths", async () => {
+    const files = new Map<string, string>()
+    const remoteData = new Map<string, unknown>()
+    const host = createPluginHost({
+      project: {
+        current: () => ({
+          id: "pandawiki:server-a:kb-1",
+          name: "Remote knowledge",
+          source: "pandawiki" as const,
+          scopeKey: "pandawiki:server-a:kb-1",
+        }),
+        subscribe: () => () => {},
+      },
+      documents: {
+        listMarkdownPaths: () => [],
+        listSelectableSourcePaths: () => [],
+        listIndexedSourcePaths: () => [],
+        readText: async () => { throw new Error("not available") },
+      },
+      files: {
+        exists: async () => false,
+        readText: async () => "",
+        writeText: async (path, value) => { files.set(path, value) },
+        createDirectory: async () => {},
+      },
+      settingsStorage: new Map<string, string>(),
+      notify: { info: vi.fn(), warning: vi.fn(), error: vi.fn() },
+      remoteData: {
+        get: async (key) => remoteData.get(key),
+        set: async (key, value) => { remoteData.set(key, value) },
+      },
+    })
+
+    await host.storage.forPlugin("official.submission-management").writeJson("storage.json", { version: 1 })
+
+    expect(files.size).toBe(0)
+    await expect(host.storage.forPlugin("official.submission-management").readJson("storage.json"))
+      .resolves.toEqual({ version: 1 })
   })
 
   it("exposes only document data through the host adapter", async () => {

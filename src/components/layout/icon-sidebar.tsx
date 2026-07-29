@@ -2,6 +2,7 @@ import { useState, useEffect } from "react"
 import {
   FileText, FolderOpen, Search, Network, ClipboardCheck, Settings, ArrowLeftRight, ClipboardList, Globe, MessageSquare, Sparkles,
   Lightbulb,
+  Puzzle,
 } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { useWikiStore } from "@/stores/wiki-store"
@@ -38,6 +39,7 @@ interface IconSidebarProps {
 export function IconSidebar({ onSwitchProject, onNewIdea }: IconSidebarProps) {
   const { t } = useTranslation()
   const activeView = useWikiStore((s) => s.activeView)
+  const activePluginRoute = useWikiStore((s) => s.activePluginRoute)
   const activeProject = useWikiStore((s) => s.activeProject)
   const setActiveView = useWikiStore((s) => s.setActiveView)
   const pendingCount = useReviewStore((s) => s.items.filter((i) => !i.resolved).length)
@@ -132,6 +134,19 @@ export function IconSidebar({ onSwitchProject, onNewIdea }: IconSidebarProps) {
               </Tooltip>
             )
           })}
+          <Tooltip>
+            <TooltipTrigger
+              onClick={() => setActivePluginRoute(null)}
+              className={`relative flex h-10 w-10 items-center justify-center rounded-md transition-colors ${
+                activeView === "plugin" && !activePluginRoute
+                  ? "bg-accent text-accent-foreground"
+                  : "text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground"
+              }`}
+            >
+              <Puzzle className="h-5 w-5" />
+            </TooltipTrigger>
+            <TooltipContent side="right">Plugin library</TooltipContent>
+          </Tooltip>
           {/* Deep Research — same row as other nav items */}
           {activeProject?.source !== "pandawiki" && <>
           <Tooltip>

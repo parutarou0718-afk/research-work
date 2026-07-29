@@ -14,6 +14,7 @@ import { isViewAvailable } from "@/lib/project-capabilities"
 import { PreviewPanel } from "./preview-panel"
 import { RemoteProjectHome } from "./remote-project-home"
 import { PandaWikiNodeReader } from "@/components/providers/panda-wiki-node-reader"
+import { PluginsSection } from "@/components/settings/sections/plugins-section"
 
 export function ContentArea() {
   const activeView = useWikiStore((s) => s.activeView)
@@ -81,11 +82,21 @@ function ActiveContent({
     case "plugin": {
       const plugin = activePluginRoute ? getPluginByRoute(activePluginRoute) : undefined
       const PluginPage = plugin?.page
-      return PluginPage ? <PluginPage host={host} /> : <PreviewPanel />
+      return PluginPage ? <PluginPage host={host} /> : <PluginLibrary />
     }
     default:
       return <PreviewPanel />
   }
+}
+
+function PluginLibrary() {
+  return (
+    <div className="h-full overflow-y-auto px-8 py-6">
+      <div className="mx-auto max-w-3xl">
+        <PluginsSection />
+      </div>
+    </div>
+  )
 }
 
 function SkillsView() {

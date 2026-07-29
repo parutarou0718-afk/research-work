@@ -18,6 +18,7 @@ import { SubmissionStatsCards } from "./submission-stats"
 import { SubmissionFilters } from "./submission-filters"
 import { SubmissionTable } from "./submission-table"
 import { SubmissionFormDialog } from "./submission-form-dialog"
+import { shouldUseManualSubmissionReference } from "./submission-project-mode"
 
 export function SubmissionsView({ host }: { host: PluginHost }) {
   const { t } = useTranslation()
@@ -37,7 +38,7 @@ export function SubmissionsView({ host }: { host: PluginHost }) {
   useEffect(() => {
     let cancelled = false
     async function loadOptions() {
-      if (!project) {
+      if (!project || project.source !== "local") {
         setPaperOptions([])
         return
       }
@@ -151,6 +152,7 @@ export function SubmissionsView({ host }: { host: PluginHost }) {
           mode={editing ? "edit" : "create"}
           submission={editing}
           paperOptions={paperOptions}
+          manualPaperReference={shouldUseManualSubmissionReference(project)}
           onOpenChange={setDialogOpen}
           onSave={handleSave}
         />

@@ -2,6 +2,7 @@ import { createDirectory, fileExists, readFile, writeFileAtomic } from "@/comman
 import { normalizePath } from "@/lib/path-utils"
 import { useWikiStore } from "@/stores/wiki-store"
 import type { FileNode } from "@/types/wiki"
+import { createTauriRemotePluginDataStore, remotePluginStorageKey, type RemotePluginDataStore } from "./RemotePluginStore"
 import type {
   PluginDocumentsApi,
   PluginHost,
@@ -20,6 +21,7 @@ interface PluginHostDependencies {
   }
   settingsStorage: Storage | Map<string, string>
   notify: PluginNotificationApi
+  remoteData?: RemotePluginDataStore
 }
 
 function pluginPathSegment(pluginId: string): string {
@@ -51,6 +53,7 @@ function removeSetting(storage: Storage | Map<string, string>, key: string): voi
 }
 
 export function createPluginHost(deps: PluginHostDependencies): PluginHost {
+  const remoteData = deps.remoteData
   return {
     project: deps.project,
     documents: deps.documents,
@@ -58,11 +61,19 @@ export function createPluginHost(deps: PluginHostDependencies): PluginHost {
       forPlugin: (pluginId) => ({
         exists: async (fileName) => {
           const project = deps.project.current()
-          return project ? deps.files.exists(pluginDataPath(project.path, pluginId, fileName)) : false
+          if (!project) return false
+          if (project.source === "pandawiki") {
+            return (await remoteData?.get(remotePluginStorageKey(project.scopeKey, pluginId, fileName))) !== undefined
+          }
+          return deps.files.exists(pluginDataPath(project.path, pluginId, fileName))
         },
         readJson: async <T,>(fileName: string): Promise<T | null> => {
           const project = deps.project.current()
           if (!project) return null
+          if (project.source === "pandawiki") {
+            const value = await remoteData?.get(remotePluginStorageKey(project.scopeKey, pluginId, fileName))
+            return value === undefined ? null : value as T
+          }
           const path = pluginDataPath(project.path, pluginId, fileName)
           if (!(await deps.files.exists(path))) return null
           try {
@@ -74,13 +85,18 @@ export function createPluginHost(deps: PluginHostDependencies): PluginHost {
         writeJson: async <T,>(fileName: string, value: T): Promise<void> => {
           const project = deps.project.current()
           if (!project) throw new Error("A project must be open before plugin data can be saved.")
+          if (project.source === "pandawiki") {
+            if (!remoteData) throw new Error("Remote plugin storage is unavailable.")
+            await remoteData.set(remotePluginStorageKey(project.scopeKey, pluginId, fileName), value)
+            return
+          }
           const directory = `${normalizePath(project.path)}/.llm-wiki/plugins/${pluginPathSegment(pluginId)}`
           await deps.files.createDirectory(directory)
           await deps.files.writeText(pluginDataPath(project.path, pluginId, fileName), JSON.stringify(value, null, 2))
         },
         readLegacyJson: async <T,>(fileName: string): Promise<T | null> => {
           const project = deps.project.current()
-          if (!project || !/^[a-zA-Z0-9][a-zA-Z0-9._-]*\.json$/.test(fileName)) return null
+          if (!project || project.source === "pandawiki" || !/^[a-zA-Z0-9][a-zA-Z0-9._-]*\.json$/.test(fileName)) return null
           const path = `${normalizePath(project.path)}/.llm-wiki/${fileName}`
           if (!(await deps.files.exists(path))) return null
           try {
@@ -112,22 +128,38 @@ function flattenPaths(nodes: FileNode[], predicate: (path: string) => boolean): 
 }
 
 function createDefaultDocumentsApi(): PluginDocumentsApi {
+  const isLocalProjectOpen = () => useWikiStore.getState().activeProject?.source === "local"
   return {
-    listMarkdownPaths: () => flattenPaths(useWikiStore.getState().fileTree, (path) => path.toLowerCase().endsWith(".md")),
-    listSelectableSourcePaths: () => flattenPaths(useWikiStore.getState().fileTree, (path) => {
+    listMarkdownPaths: () => isLocalProjectOpen()
+      ? flattenPaths(useWikiStore.getState().fileTree, (path) => path.toLowerCase().endsWith(".md"))
+      : [],
+    listSelectableSourcePaths: () => isLocalProjectOpen()
+      ? flattenPaths(useWikiStore.getState().fileTree, (path) => {
       const normalized = normalizePath(path).toLowerCase()
       return normalized.includes("/raw/sources/") && /\.(md|mdx|txt|pdf|doc|docx|odt|rtf|epub|pptx)$/.test(normalized)
-    }),
-    listIndexedSourcePaths: () => [...useWikiStore.getState().projectPathIndex.byPath.values()].map((entry) => entry.path),
-    readText: readFile,
+    })
+      : [],
+    listIndexedSourcePaths: () => isLocalProjectOpen()
+      ? [...useWikiStore.getState().projectPathIndex.byPath.values()].map((entry) => entry.path)
+      : [],
+    readText: async (path) => {
+      if (!isLocalProjectOpen()) throw new Error("Remote documents require a PandaWiki DocumentProvider.")
+      return readFile(path)
+    },
   }
 }
 
 export function createDefaultPluginHost(): PluginHost {
   const project: PluginProjectApi = {
-    current: () => useWikiStore.getState().project,
+    current: () => {
+      const active = useWikiStore.getState().activeProject
+      if (!active) return null
+      return active.source === "local"
+        ? { id: active.id, name: active.name, source: "local", path: active.path }
+        : { id: active.id, name: active.name, source: "pandawiki", scopeKey: active.scopeKey }
+    },
     subscribe: (listener) => useWikiStore.subscribe((state, previous) => {
-      if (state.project?.path !== previous.project?.path) listener()
+      if (state.activeProject?.id !== previous.activeProject?.id) listener()
     }),
   }
   return createPluginHost({
@@ -140,6 +172,7 @@ export function createDefaultPluginHost(): PluginHost {
       createDirectory,
     },
     settingsStorage: localStorage,
+    remoteData: createTauriRemotePluginDataStore(),
     notify: {
       info: (message) => console.info("[plugin]", message),
       warning: (message) => console.warn("[plugin]", message),

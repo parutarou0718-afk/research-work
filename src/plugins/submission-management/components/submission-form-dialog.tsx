@@ -83,6 +83,7 @@ export function SubmissionFormDialog({
   open,
   mode,
   paperOptions,
+  manualPaperReference = false,
   submission,
   onOpenChange,
   onSave,
@@ -90,6 +91,7 @@ export function SubmissionFormDialog({
   open: boolean
   mode: "create" | "edit"
   paperOptions: PaperOption[]
+  manualPaperReference?: boolean
   submission: Submission | null
   onOpenChange: (open: boolean) => void
   onSave: (input: CreateSubmissionInput) => Promise<void>
@@ -154,22 +156,37 @@ export function SubmissionFormDialog({
         </DialogHeader>
 
         <div className="grid max-h-[70vh] gap-4 overflow-y-auto pr-1 sm:grid-cols-2">
-          <div className="sm:col-span-2">
-            <Label htmlFor="submission-paper">{t("submissions.fields.paper")}</Label>
-            <select
-              id="submission-paper"
-              className="mt-2 h-8 w-full rounded-lg border bg-background px-2 text-sm"
-              value={form.paperPath}
-              onChange={(event) => handlePaperChange(event.target.value)}
-            >
-              <option value="">{t("submissions.dialog.selectPaper")}</option>
-              {paperOptions.map((option) => (
-                <option key={option.path} value={option.path}>
-                  {option.title}
-                </option>
-              ))}
-            </select>
-          </div>
+          {manualPaperReference ? (
+            <>
+              <Field label="Paper title">
+                <Input value={form.paperTitle} onChange={(event) => update("paperTitle", event.target.value)} />
+              </Field>
+              <Field label="Paper reference">
+                <Input
+                  value={form.paperPath}
+                  placeholder="PandaWiki node or document reference"
+                  onChange={(event) => update("paperPath", event.target.value)}
+                />
+              </Field>
+            </>
+          ) : (
+            <div className="sm:col-span-2">
+              <Label htmlFor="submission-paper">{t("submissions.fields.paper")}</Label>
+              <select
+                id="submission-paper"
+                className="mt-2 h-8 w-full rounded-lg border bg-background px-2 text-sm"
+                value={form.paperPath}
+                onChange={(event) => handlePaperChange(event.target.value)}
+              >
+                <option value="">{t("submissions.dialog.selectPaper")}</option>
+                {paperOptions.map((option) => (
+                  <option key={option.path} value={option.path}>
+                    {option.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <Field label={t("submissions.fields.journalName")}>
             <Input value={form.journalName} onChange={(event) => update("journalName", event.target.value)} />
