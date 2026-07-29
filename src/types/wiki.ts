@@ -113,6 +113,7 @@ export interface EntityModel {
   id: string
   name: string
   type: string
+  attributes: Record<string, unknown>
 }
 
 export interface RelationModel {
@@ -128,7 +129,38 @@ export interface GraphEvidenceModel {
   excerpt: string
 }
 
+export type KnowledgeFieldValueType = "text" | "number" | "date" | "boolean" | "select"
+
+export interface KnowledgeFieldModel {
+  key: string
+  label: string
+  target: "entity"
+  entityTypes: string[]
+  valueType: KnowledgeFieldValueType
+  multiple: boolean
+  filterable: boolean
+  enabled: boolean
+  options: string[]
+  extractInstruction: string
+}
+
+export interface KnowledgeNavigationSectionModel {
+  id: string
+  label: string
+  entityTypes: string[]
+  fieldKeys: string[]
+  order: number
+  enabled: boolean
+}
+
+export interface KnowledgeSchemaModel {
+  version: number
+  fields: KnowledgeFieldModel[]
+  navigation: KnowledgeNavigationSectionModel[]
+}
+
 export interface KnowledgeGraphModel {
+  schema: KnowledgeSchemaModel
   entities: EntityModel[]
   relations: Array<RelationModel & { evidence: GraphEvidenceModel[] }>
 }

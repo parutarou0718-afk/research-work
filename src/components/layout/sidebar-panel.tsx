@@ -7,13 +7,16 @@ import { useWikiStore } from "@/stores/wiki-store"
 import { isPandaWikiProject } from "@/domain/projects"
 import type { KnowledgeProvider } from "@/services/providers/contracts/KnowledgeProvider"
 import { PandaWikiNodeTree } from "@/components/providers/panda-wiki-node-tree"
+import { PandaWikiKnowledgeNavigation } from "@/components/providers/panda-wiki-knowledge-navigation"
+import type { GraphProvider } from "@/services/providers/contracts/GraphProvider"
 
 interface SidebarPanelProps {
   onCollapse?: () => void
   pandaWikiKnowledgeProvider?: KnowledgeProvider
+  pandaWikiGraphProvider?: GraphProvider
 }
 
-export function SidebarPanel({ onCollapse, pandaWikiKnowledgeProvider }: SidebarPanelProps) {
+export function SidebarPanel({ onCollapse, pandaWikiKnowledgeProvider, pandaWikiGraphProvider }: SidebarPanelProps) {
   const { t } = useTranslation()
   const activeProject = useWikiStore((s) => s.activeProject)
   const providerTree = useWikiStore((s) => s.providerFileTree)
@@ -43,6 +46,9 @@ export function SidebarPanel({ onCollapse, pandaWikiKnowledgeProvider }: Sidebar
             />
           </div>
         )}
+        <div className="shrink-0 border-t">
+          <PandaWikiKnowledgeNavigation graphProvider={pandaWikiGraphProvider} />
+        </div>
       </div>
     )
   }

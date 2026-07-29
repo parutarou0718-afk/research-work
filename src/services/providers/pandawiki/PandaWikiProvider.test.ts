@@ -126,7 +126,11 @@ describe("PandaWiki authentication provider", () => {
     const gateway = createGateway()
     const provider = createPandaWikiProvider({ baseUrl: "https://wiki.example", createGateway: async () => gateway })
 
-    await expect(provider.graph.getGraph("kb-1")).resolves.toEqual({ entities: [], relations: [] })
+    await expect(provider.graph.getGraph("kb-1")).resolves.toEqual({
+      schema: { version: 1, fields: [], navigation: [] },
+      entities: [],
+      relations: [],
+    })
     expect(gateway.getKnowledgeGraph).toHaveBeenCalledWith("kb-1")
   })
 

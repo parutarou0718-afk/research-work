@@ -152,6 +152,7 @@ export function AppLayout({ onSwitchProject, pandaWikiKnowledgeProvider, pandaWi
                   <SidebarPanel
                     onCollapse={toggleLeftPanel}
                     pandaWikiKnowledgeProvider={pandaWikiKnowledgeProvider}
+                    pandaWikiGraphProvider={pandaWikiGraphProvider}
                   />
                 </div>
                 <ActivityPanel />

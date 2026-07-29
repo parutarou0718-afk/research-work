@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest"
 import { mapKnowledgeDto } from "./KnowledgeMapper"
 import { mapConversationDto, fromStreamChunk } from "./ConversationMapper"
 import { mapDocumentDto, mapUploadStatusDto } from "./DocumentMapper"
-import { mapEntityDto, mapRelationDto } from "./GraphMapper"
+import { mapEntityDto, mapKnowledgeGraphDto, mapRelationDto } from "./GraphMapper"
 import { mapNodeDto, mapNodeTreeDto } from "./NodeMapper"
 
 describe("PandaWiki mappers", () => {
@@ -60,7 +60,63 @@ describe("PandaWiki mappers", () => {
     expect(fromStreamChunk({ conversation_id: "c", content: "Hello", done: false })).toEqual({ conversationId: "c", content: "Hello", done: false })
     expect(mapDocumentDto({ id: "d", kb_id: "kb", name: "file.pdf", status: "ready", updated_at: "2026-07-24T00:00:00.000Z" }).status).toBe("ready")
     expect(mapUploadStatusDto({ status: "processing" })).toBe("processing")
-    expect(mapEntityDto({ id: "e", name: "Alice", type: "person" })).toEqual({ id: "e", name: "Alice", type: "person" })
+    expect(mapEntityDto({ id: "e", name: "Alice", type: "person" })).toEqual({ id: "e", name: "Alice", type: "person", attributes: {} })
     expect(mapRelationDto({ id: "r", source_entity_id: "e", target_entity_id: "f", type: "knows", evidence: [] })).toEqual({ id: "r", sourceId: "e", targetId: "f", type: "knows" })
+  })
+
+  it("maps server-defined graph fields and extracted attributes without client-side schema rules", () => {
+    expect(mapKnowledgeGraphDto({
+      schema: {
+        version: 1,
+        fields: [{
+          key: "argument",
+          label: "Argument",
+          target: "entity",
+          entity_types: ["concept"],
+          value_type: "text",
+          multiple: true,
+          filterable: true,
+          enabled: true,
+          options: [],
+          extract_instruction: "Extract the stated argument.",
+        }],
+        navigation: [{
+          id: "concepts",
+          label: "Concepts",
+          entity_types: ["concept"],
+          field_keys: ["argument"],
+          order: 2,
+          enabled: true,
+        }],
+      },
+      entities: [{ id: "concept-1", name: "Causal path", type: "concept", attributes: { argument: ["A causes B"] } }],
+      relations: [],
+    })).toEqual({
+      schema: {
+        version: 1,
+        fields: [{
+          key: "argument",
+          label: "Argument",
+          target: "entity",
+          entityTypes: ["concept"],
+          valueType: "text",
+          multiple: true,
+          filterable: true,
+          enabled: true,
+          options: [],
+          extractInstruction: "Extract the stated argument.",
+        }],
+        navigation: [{
+          id: "concepts",
+          label: "Concepts",
+          entityTypes: ["concept"],
+          fieldKeys: ["argument"],
+          order: 2,
+          enabled: true,
+        }],
+      },
+      entities: [{ id: "concept-1", name: "Causal path", type: "concept", attributes: { argument: ["A causes B"] } }],
+      relations: [],
+    })
   })
 })
