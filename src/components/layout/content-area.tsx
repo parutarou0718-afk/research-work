@@ -31,7 +31,7 @@ export function ContentArea({ pandaWikiKnowledgeProvider, pandaWikiSearchProvide
   const activeProject = useWikiStore((s) => s.activeProject)
 
   if (isPandaWikiProject(activeProject) && !isViewAvailable(activeProject, activeView)) {
-    return <RemoteProjectHome project={activeProject} />
+    return <RemoteProjectHome project={activeProject} onNavigate={(view) => useWikiStore.getState().setActiveView(view)} />
   }
 
   // Keep SourcesView mounted after its first visit. Opening a source uses the
@@ -95,7 +95,7 @@ function ActiveContent({
       return isPandaWikiProject(activeProject) && usesPandaWikiSearchSurface(activeProject)
         ? pandaWikiKnowledgeProvider && pandaWikiSearchProvider
           ? <PandaWikiSearchView knowledgeProvider={pandaWikiKnowledgeProvider} searchProvider={pandaWikiSearchProvider} />
-          : <RemoteProjectHome project={activeProject} />
+          : <RemoteProjectHome project={activeProject} onNavigate={(view) => useWikiStore.getState().setActiveView(view)} />
         : <SearchView />
     case "graph":
       return <GraphView />

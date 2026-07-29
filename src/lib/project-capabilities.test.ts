@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest"
 import type { PandaWikiVirtualProject } from "@/domain/projects"
 import {
   isPandaWikiChatSettingsAvailable,
+  getRemoteShellViews,
+  showsLocalShellTools,
   isViewAvailable,
   usesPandaWikiChatSurface,
   usesPandaWikiSearchSurface,
@@ -55,5 +57,19 @@ describe("project capability policy", () => {
   it("shows PandaWiki chat configuration only for remote projects", () => {
     expect(isPandaWikiChatSettingsAvailable(remote)).toBe(true)
     expect(isPandaWikiChatSettingsAvailable(null)).toBe(false)
+  })
+
+  it("exposes only verified PandaWiki shell routes", () => {
+    const connected: PandaWikiVirtualProject = {
+      ...remote,
+      capabilities: { ...remote.capabilities, search: true, chat: true },
+    }
+
+    expect(getRemoteShellViews(connected)).toEqual(["wiki", "search", "chat", "plugin", "settings"])
+  })
+
+  it("does not show local daemon status for a PandaWiki project", () => {
+    expect(showsLocalShellTools(remote)).toBe(false)
+    expect(showsLocalShellTools(null)).toBe(true)
   })
 })

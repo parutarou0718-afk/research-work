@@ -13,7 +13,7 @@ import { usePlugins } from "@/core/plugins/usePlugins"
 import { useTranslation } from "react-i18next"
 import logoImg from "@/assets/logo.jpg"
 import type { WikiState } from "@/stores/wiki-store"
-import { isViewAvailable } from "@/lib/project-capabilities"
+import { isViewAvailable, showsLocalShellTools } from "@/lib/project-capabilities"
 import {
   isResearchPanelVisible,
   nextResearchPanelNavState,
@@ -60,6 +60,7 @@ export function IconSidebar({ onSwitchProject, onNewIdea }: IconSidebarProps) {
   // Daemon health check
   const [daemonStatus, setDaemonStatus] = useState<string>("starting")
   useEffect(() => {
+    if (!showsLocalShellTools(activeProject)) return
     const check = async () => {
       try {
         const { clipServerStatus } = await import("@/commands/fs")
@@ -72,7 +73,7 @@ export function IconSidebar({ onSwitchProject, onNewIdea }: IconSidebarProps) {
     check()
     const interval = setInterval(check, 30000)
     return () => clearInterval(interval)
-  }, [])
+  }, [activeProject])
 
   function handleResearchPanelToggle() {
     const next = nextResearchPanelNavState(activeView, researchPanelOpen)
@@ -193,25 +194,26 @@ export function IconSidebar({ onSwitchProject, onNewIdea }: IconSidebarProps) {
         </div>
         {/* Bottom: daemon status + settings + switch project */}
         <div className="flex flex-col items-center gap-1 pb-1">
-          {/* Daemon status indicator */}
-          <Tooltip>
-            <TooltipTrigger className="flex h-6 w-6 items-center justify-center">
-              <span
-                className={`h-2.5 w-2.5 rounded-full ${
-                  daemonStatus === "running" ? "bg-emerald-500" :
-                  daemonStatus === "starting" ? "bg-amber-400 animate-pulse" :
-                  daemonStatus === "port_conflict" ? "bg-red-500" :
-                  "bg-red-500 animate-pulse"
-                }`}
-              />
-            </TooltipTrigger>
-            <TooltipContent side="right">
-              {daemonStatus === "running" && "Clip server running"}
-              {daemonStatus === "starting" && "Clip server starting..."}
-              {daemonStatus === "port_conflict" && "Port 19827 is occupied. Web Clipper unavailable."}
-              {daemonStatus === "error" && "Clip server error. Restarting..."}
-            </TooltipContent>
-          </Tooltip>
+          {showsLocalShellTools(activeProject) && (
+            <Tooltip>
+              <TooltipTrigger className="flex h-6 w-6 items-center justify-center">
+                <span
+                  className={`h-2.5 w-2.5 rounded-full ${
+                    daemonStatus === "running" ? "bg-emerald-500" :
+                    daemonStatus === "starting" ? "bg-amber-400 animate-pulse" :
+                    daemonStatus === "port_conflict" ? "bg-red-500" :
+                    "bg-red-500 animate-pulse"
+                  }`}
+                />
+              </TooltipTrigger>
+              <TooltipContent side="right">
+                {daemonStatus === "running" && "Clip server running"}
+                {daemonStatus === "starting" && "Clip server starting..."}
+                {daemonStatus === "port_conflict" && "Port 19827 is occupied. Web Clipper unavailable."}
+                {daemonStatus === "error" && "Clip server error. Restarting..."}
+              </TooltipContent>
+            </Tooltip>
+          )}
           <Tooltip>
             <TooltipTrigger
               onClick={() => setActiveView("settings")}

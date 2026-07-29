@@ -3,6 +3,8 @@ import type { WikiState } from "@/stores/wiki-store"
 
 export type ProjectView = WikiState["activeView"]
 
+export type RemoteShellView = Extract<ProjectView, "wiki" | "search" | "chat" | "plugin" | "settings">
+
 export function isViewAvailable(project: Project | null, view: ProjectView | "plugin"): boolean {
   if (!project || project.source === "local") return true
   if (view === "settings" || view === "plugin" || view === "wiki" || view === "skills") return true
@@ -28,4 +30,24 @@ export function usesPandaWikiSearchSurface(project: Project | null): boolean {
 
 export function isPandaWikiChatSettingsAvailable(project: Project | null): boolean {
   return project?.source === "pandawiki"
+}
+
+/**
+ * The remote workspace is intentionally smaller than a local filesystem
+ * project. This list is the single policy source for its visible shell
+ * actions, so an unavailable local tool cannot become reachable by accident.
+ */
+export function getRemoteShellViews(project: Project | null): RemoteShellView[] {
+  if (project?.source !== "pandawiki") return []
+
+  const views: RemoteShellView[] = ["wiki"]
+  if (project.capabilities.search) views.push("search")
+  if (project.capabilities.chat) views.push("chat")
+  views.push("plugin", "settings")
+  return views
+}
+
+/** Clip-server health is a local-project concern, not remote server health. */
+export function showsLocalShellTools(project: Project | null): boolean {
+  return project?.source !== "pandawiki"
 }
