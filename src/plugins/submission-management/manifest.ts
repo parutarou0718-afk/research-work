@@ -7,5 +7,5 @@ export const submissionManagementManifest: PluginManifest = {
   version: "0.1.0",
   apiVersion: "0.1",
   kind: "official",
-  defaultEnabled: false,
+  defaultEnabled: true,
 }

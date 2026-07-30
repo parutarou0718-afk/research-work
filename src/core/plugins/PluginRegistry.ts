@@ -55,6 +55,13 @@ export class PluginRegistry {
       .sort((left, right) => (left.order ?? 0) - (right.order ?? 0))
   }
 
+  getPluginByRoute(route: string): LlmWikiPlugin | undefined {
+    return this.getEnabledPlugins().find((plugin) =>
+      route === `plugin:${plugin.manifest.id}`
+      || (plugin.navigationItems ?? []).some((item) => item.route === route),
+    )
+  }
+
   isPluginEnabled(id: PluginId): boolean {
     return this.enabledPluginIds.has(id)
   }
