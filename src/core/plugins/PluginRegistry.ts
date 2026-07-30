@@ -6,10 +6,11 @@ import type {
 } from "./types"
 
 const ENABLED_PLUGINS_STORAGE_KEY = "llm-wiki.enabled-plugins.v0.1"
+const APPLIED_DEFAULT_PLUGINS_STORAGE_KEY = "llm-wiki.applied-default-plugins.v0.1"
 
-function readEnabledPluginIds(): Set<PluginId> {
+function readPluginIds(storageKey: string): Set<PluginId> {
   try {
-    const saved = JSON.parse(localStorage.getItem(ENABLED_PLUGINS_STORAGE_KEY) ?? "[]")
+    const saved = JSON.parse(localStorage.getItem(storageKey) ?? "[]")
     return new Set(Array.isArray(saved) ? saved.filter((id): id is string => typeof id === "string") : [])
   } catch {
     return new Set()
@@ -18,7 +19,8 @@ function readEnabledPluginIds(): Set<PluginId> {
 
 export class PluginRegistry {
   private readonly plugins = new Map<PluginId, LlmWikiPlugin>()
-  private readonly enabledPluginIds = readEnabledPluginIds()
+  private readonly enabledPluginIds = readPluginIds(ENABLED_PLUGINS_STORAGE_KEY)
+  private readonly appliedDefaultPluginIds = readPluginIds(APPLIED_DEFAULT_PLUGINS_STORAGE_KEY)
   private readonly pendingDataRecoveryPluginIds = new Set<PluginId>()
   private readonly dataRecoveryStates = new Map<PluginId, "pending" | "deferred">()
 
@@ -27,9 +29,11 @@ export class PluginRegistry {
       throw new Error(`Plugin '${plugin.manifest.id}' is already registered.`)
     }
     this.plugins.set(plugin.manifest.id, plugin)
-    if (plugin.manifest.defaultEnabled && !localStorage.getItem(ENABLED_PLUGINS_STORAGE_KEY)) {
+    if (plugin.manifest.defaultEnabled && !this.appliedDefaultPluginIds.has(plugin.manifest.id)) {
       this.enabledPluginIds.add(plugin.manifest.id)
+      this.appliedDefaultPluginIds.add(plugin.manifest.id)
       this.persistEnabledPlugins()
+      this.persistAppliedDefaultPlugins()
     }
   }
 
@@ -138,6 +142,10 @@ export class PluginRegistry {
 
   private persistEnabledPlugins(): void {
     localStorage.setItem(ENABLED_PLUGINS_STORAGE_KEY, JSON.stringify([...this.enabledPluginIds]))
+  }
+
+  private persistAppliedDefaultPlugins(): void {
+    localStorage.setItem(APPLIED_DEFAULT_PLUGINS_STORAGE_KEY, JSON.stringify([...this.appliedDefaultPluginIds]))
   }
 
   private async runLifecycle(

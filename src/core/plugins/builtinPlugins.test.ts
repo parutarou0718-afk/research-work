@@ -43,14 +43,21 @@ describe("official built-in plugins", () => {
     builtinPlugins.forEach((createPlugin) => registry.register(createPlugin(host)))
 
     expect(registry.isPluginEnabled("official.submission-management")).toBe(false)
-    expect(registry.getPluginNavigationItems()).toEqual([])
+    expect(registry.getPluginNavigationItems()).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: "industry-workspaces", route: "plugin:official.industry-workspaces" }),
+    ]))
 
     await registry.enablePlugin("official.submission-management")
-    expect(registry.getPluginNavigationItems()).toMatchObject([
-      { id: "submission-management", route: "plugin:official.submission-management" },
-    ])
+    expect(registry.getPluginNavigationItems()).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: "submission-management", route: "plugin:official.submission-management" }),
+    ]))
 
     await registry.disablePlugin("official.submission-management")
-    expect(registry.getPluginNavigationItems()).toEqual([])
+    expect(registry.getPluginNavigationItems()).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: "industry-workspaces" }),
+    ]))
+    expect(registry.getPluginNavigationItems()).not.toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: "submission-management" }),
+    ]))
   })
 })
