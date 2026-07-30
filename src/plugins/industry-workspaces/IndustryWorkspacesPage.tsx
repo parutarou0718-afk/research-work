@@ -8,6 +8,7 @@ import {
   type WorkspaceMenuItem,
   type WorkspaceSuiteId,
 } from "./domain/workspace-suites"
+import { RemoteGraphSnapshot, type RemoteGraphSnapshotMode } from "./components/remote-graph-snapshot"
 
 const SUITE_ICONS = {
   research: BookOpen,
@@ -15,7 +16,7 @@ const SUITE_ICONS = {
   investment: TrendingUp,
 }
 
-export function IndustryWorkspacesPage({ host }: PluginPageProps) {
+export function IndustryWorkspacesPage({ host, graphProvider }: PluginPageProps) {
   const [suiteId, setSuiteId] = useState<WorkspaceSuiteId>("research")
   const [selectedItemId, setSelectedItemId] = useState("overview")
   const [project, setProject] = useState(host.project.current())
@@ -84,12 +85,32 @@ export function IndustryWorkspacesPage({ host }: PluginPageProps) {
           <div className="mx-auto max-w-3xl">
             <h2 className="text-xl font-semibold">{selectedItem?.label ?? suite.name}</h2>
             <p className="mt-2 text-sm text-muted-foreground">{selectedItem?.description ?? suite.description}</p>
-            <WorkspaceOverview suiteName={suite.name} projectName={project?.name ?? null} />
+            <WorkspaceContent suiteId={suite.id} selectedItemId={selectedItem?.id ?? "overview"} graphProvider={graphProvider} project={project} suiteName={suite.name} />
           </div>
         </main>
       </div>
     </section>
   )
+}
+
+function WorkspaceContent({ suiteId, selectedItemId, graphProvider, project, suiteName }: {
+  suiteId: WorkspaceSuiteId
+  selectedItemId: string
+  graphProvider: PluginPageProps["graphProvider"]
+  project: ReturnType<PluginPageProps["host"]["project"]["current"]>
+  suiteName: string
+}) {
+  const mode = getGraphSnapshotMode(suiteId, selectedItemId)
+  if (mode) return <RemoteGraphSnapshot graphProvider={graphProvider} project={project} mode={mode} />
+  return <WorkspaceOverview suiteName={suiteName} projectName={project?.name ?? null} />
+}
+
+function getGraphSnapshotMode(suiteId: WorkspaceSuiteId, itemId: string): RemoteGraphSnapshotMode | null {
+  if (suiteId === "legal" && itemId === "matters") return "legal-matters"
+  if (suiteId === "legal" && itemId === "timeline") return "legal-timeline"
+  if (suiteId === "investment" && itemId === "companies") return "investment-companies"
+  if (suiteId === "investment" && itemId === "risks") return "investment-risks"
+  return null
 }
 
 function WorkspaceOverview({ suiteName, projectName }: { suiteName: string; projectName: string | null }) {

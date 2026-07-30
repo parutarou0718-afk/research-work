@@ -1,4 +1,4 @@
-import type { Project, ProjectCapabilities } from "@/domain/projects"
+import type { ProjectCapabilities } from "@/domain/projects"
 
 export type WorkspaceSuiteId = "research" | "legal" | "investment"
 export type WorkspaceSurface = "overview" | "entities" | "timeline" | "board"
@@ -63,6 +63,6 @@ export const WORKSPACE_SUITES: WorkspaceSuite[] = [
   },
 ]
 
-export function getVisibleSuiteMenuItems(suite: WorkspaceSuite, project: Project | null): WorkspaceMenuItem[] {
-  return suite.menu.filter((item) => !item.requires || Boolean(project?.capabilities[item.requires]))
+export function getVisibleSuiteMenuItems(suite: WorkspaceSuite, project: { source: "local" | "pandawiki"; capabilities?: ProjectCapabilities } | null): WorkspaceMenuItem[] {
+  return suite.menu.filter((item) => !item.requires || project?.source === "local" || Boolean(project?.capabilities?.[item.requires]))
 }

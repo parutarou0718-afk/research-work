@@ -127,7 +127,7 @@ function ActiveContent({
     case "plugin": {
       const plugin = activePluginRoute ? getPluginByRoute(activePluginRoute) : undefined
       const PluginPage = plugin?.page
-      return PluginPage ? <PluginPage host={host} /> : <PluginLibrary />
+      return PluginPage ? <PluginPage host={host} graphProvider={pandaWikiGraphProvider} /> : <PluginLibrary />
     }
     default:
       return <PreviewPanel />

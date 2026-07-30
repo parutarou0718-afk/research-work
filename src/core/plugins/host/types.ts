@@ -3,6 +3,7 @@ export interface LocalPluginProject {
   name: string
   source: "local"
   path: string
+  capabilities?: import("@/domain/projects").ProjectCapabilities
 }
 
 export interface PandaWikiPluginProject {
@@ -10,6 +11,8 @@ export interface PandaWikiPluginProject {
   name: string
   source: "pandawiki"
   scopeKey: string
+  knowledgeBaseId?: string
+  capabilities?: import("@/domain/projects").ProjectCapabilities
 }
 
 export type PluginProject = LocalPluginProject | PandaWikiPluginProject
@@ -55,4 +58,5 @@ export interface PluginHost {
 
 export interface PluginPageProps {
   host: PluginHost
+  graphProvider?: import("@/services/providers/contracts/GraphProvider").GraphProvider
 }
