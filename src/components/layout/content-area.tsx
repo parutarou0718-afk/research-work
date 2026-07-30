@@ -25,6 +25,7 @@ import type { NodeEditorProvider } from "@/services/providers/contracts/NodeEdit
 import type { DocumentProvider } from "@/services/providers/contracts/DocumentProvider"
 import type { GraphProvider } from "@/services/providers/contracts/GraphProvider"
 import { usesPandaWikiDocumentSurface, usesPandaWikiGraphSurface, usesPandaWikiSearchSurface } from "@/lib/project-capabilities"
+import { shouldKeepLocalSourcesMounted } from "./content-area-state"
 
 interface ContentAreaProps {
   pandaWikiKnowledgeProvider?: KnowledgeProvider
@@ -37,32 +38,34 @@ interface ContentAreaProps {
 export function ContentArea({ pandaWikiKnowledgeProvider, pandaWikiSearchProvider, pandaWikiNodeEditor, pandaWikiDocumentProvider, pandaWikiGraphProvider }: ContentAreaProps) {
   const activeView = useWikiStore((s) => s.activeView)
   const activeProject = useWikiStore((s) => s.activeProject)
+  const isRemoteProject = isPandaWikiProject(activeProject)
 
-  if (isPandaWikiProject(activeProject) && !isViewAvailable(activeProject, activeView)) {
+  // Hooks must run before every early return. Previously the remote Sources
+  // branch returned before this state hook, then a graph/chat navigation
+  // reached it and React correctly reported a changed hook order.
+  const [hasMountedSources, setHasMountedSources] = useState(
+    () => !isRemoteProject && activeView === "sources",
+  )
+
+  useEffect(() => {
+    if (!isRemoteProject && activeView === "sources") setHasMountedSources(true)
+  }, [activeView, isRemoteProject])
+
+  if (isRemoteProject && !isViewAvailable(activeProject, activeView)) {
     return <RemoteProjectHome project={activeProject} onNavigate={(view) => useWikiStore.getState().setActiveView(view)} />
   }
 
   // A remote Documents surface is intentionally separate from local
   // SourcesView, which owns local project paths, queues, and indexes.
-  if (isPandaWikiProject(activeProject) && usesPandaWikiDocumentSurface(activeProject) && activeView === "sources") {
+  if (isRemoteProject && usesPandaWikiDocumentSurface(activeProject) && activeView === "sources") {
     return pandaWikiKnowledgeProvider && pandaWikiDocumentProvider
       ? <PandaWikiDocumentsView knowledgeProvider={pandaWikiKnowledgeProvider} documentProvider={pandaWikiDocumentProvider} />
       : <RemoteProjectHome project={activeProject} onNavigate={(view) => useWikiStore.getState().setActiveView(view)} />
   }
 
-  // Keep SourcesView mounted after its first visit. Opening a source uses the
-  // full-width wiki preview, and unmounting the source tree here would discard
-  // its scroll position, expanded folders, and incremental row limit. Hiding
-  // the mounted view makes closing the preview a true return operation.
-  const [hasMountedSources, setHasMountedSources] = useState(activeView === "sources")
-
-  useEffect(() => {
-    if (activeView === "sources") setHasMountedSources(true)
-  }, [activeView])
-
   // Include the current view directly so the first navigation to Sources does
   // not wait for the effect above and briefly render an empty content area.
-  if (hasMountedSources || activeView === "sources") {
+  if (shouldKeepLocalSourcesMounted({ isRemoteProject, hasMountedSources, activeView })) {
     return (
       <>
         <div className={activeView === "sources" ? "h-full" : "hidden"}>
