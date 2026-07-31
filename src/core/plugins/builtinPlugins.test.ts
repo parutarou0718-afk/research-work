@@ -37,16 +37,19 @@ beforeEach(() => {
 })
 
 describe("official built-in plugins", () => {
-  it("keeps submission management preinstalled inside Workspaces without a second global icon", async () => {
+  it("registers three independent industry workspace icons and keeps submission management embedded", async () => {
     const registry = new PluginRegistry()
     const host = createTestHost()
     builtinPlugins.forEach((createPlugin) => registry.register(createPlugin(host)))
 
     expect(registry.isPluginEnabled("official.submission-management")).toBe(true)
-    expect(registry.getPluginNavigationItems()).toEqual(expect.arrayContaining([
-      expect.objectContaining({ id: "industry-workspaces", route: "plugin:official.industry-workspaces" }),
+    expect(registry.getPluginNavigationItems().map((item) => item.id)).toEqual(expect.arrayContaining([
+      "research-workspace",
+      "legal-workspace",
+      "investment-workspace",
     ]))
     expect(registry.getPluginNavigationItems()).not.toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: "industry-workspaces" }),
       expect.objectContaining({ id: "submission-management" }),
     ]))
     expect(registry.getPluginByRoute("plugin:official.submission-management")?.manifest.id)

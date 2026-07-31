@@ -1,31 +1,47 @@
 import { renderToStaticMarkup } from "react-dom/server"
 import { describe, expect, it } from "vitest"
 import type { PluginHost } from "@/core/plugins/host/types"
-import { createIndustryWorkspacesPlugin } from "./index"
+import { createIndustryWorkspacePlugins } from "./index"
 import { IndustryWorkspacesPage } from "./IndustryWorkspacesPage"
+import i18n from "@/i18n"
 
 const host = {
   project: { current: () => null, subscribe: () => () => {} },
 } as unknown as PluginHost
 
-describe("Industry Workspaces plugin", () => {
-  it("is preinstalled with one Workspaces route", () => {
-    const plugin = createIndustryWorkspacesPlugin(host)
+describe("Industry Workspaces plugins", () => {
+  it("is preinstalled as three independently-addressable workspace routes", () => {
+    const plugins = createIndustryWorkspacePlugins(host)
 
-    expect(plugin.manifest.defaultEnabled).toBe(true)
-    expect(plugin.navigationItems).toEqual([
-      expect.objectContaining({
-        label: "Workspaces",
-        route: "plugin:official.industry-workspaces",
-      }),
+    expect(plugins.map((plugin) => plugin.manifest.id)).toEqual([
+      "official.research-workspace",
+      "official.legal-workspace",
+      "official.investment-workspace",
+    ])
+    expect(plugins.flatMap((plugin) => plugin.navigationItems ?? []).map((item) => item.id)).toEqual([
+      "research-workspace",
+      "legal-workspace",
+      "investment-workspace",
     ])
   })
 
   it("renders all three installed suite choices", () => {
-    const markup = renderToStaticMarkup(<IndustryWorkspacesPage host={host} />)
+    const plugins = createIndustryWorkspacePlugins(host)
+    const markup = renderToStaticMarkup(<IndustryWorkspacesPage host={host} suiteId="research" />)
 
     expect(markup).toContain("Research Workspace")
-    expect(markup).toContain("Legal Workspace")
-    expect(markup).toContain("Investment Research Workspace")
+    expect(markup).toContain("Submission management")
+    expect(plugins).toHaveLength(3)
+  })
+
+  it("renders the workspace shell in Chinese when the UI language is Chinese", async () => {
+    await i18n.changeLanguage("zh")
+    const markup = renderToStaticMarkup(<IndustryWorkspacesPage host={host} suiteId="research" />)
+
+    expect(markup).toContain("工作台")
+    expect(markup).toContain("科研工作台")
+    expect(markup).not.toContain("Research Workspace")
+
+    await i18n.changeLanguage("en")
   })
 })
