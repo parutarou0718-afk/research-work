@@ -4,6 +4,7 @@ import { useWikiStore } from "@/stores/wiki-store"
 import type { FileNode } from "@/types/wiki"
 import { createTauriRemotePluginDataStore, remotePluginStorageKey, type RemotePluginDataStore } from "./RemotePluginStore"
 import { getPandaWikiPluginRecordProvider } from "./PandaWikiPluginRecordBridge"
+import { getPandaWikiPluginKnowledgeProvider } from "./PandaWikiPluginKnowledgeBridge"
 import type { PluginRecordProvider } from "@/services/providers/contracts/PluginRecordProvider"
 import type {
   PluginDocumentsApi,
@@ -175,8 +176,25 @@ function createDefaultDocumentsApi(): PluginDocumentsApi {
       ? [...useWikiStore.getState().projectPathIndex.byPath.values()].map((entry) => entry.path)
       : [],
     readText: async (path) => {
-      if (!isLocalProjectOpen()) throw new Error("Remote documents require a PandaWiki DocumentProvider.")
+      if (!isLocalProjectOpen()) {
+        const provider = getPandaWikiPluginKnowledgeProvider()
+        if (!provider) throw new Error("Remote knowledge provider is unavailable.")
+        return (await provider.getNode(path)).content
+      }
       return readFile(path)
+    },
+    listReferences: async () => {
+      if (isLocalProjectOpen()) {
+        return flattenPaths(useWikiStore.getState().fileTree, (path) => path.toLowerCase().endsWith(".md"))
+          .map((path) => ({ id: path, title: path.split("/").pop()?.replace(/\.md$/i, "") ?? path, locator: path }))
+      }
+      const provider = getPandaWikiPluginKnowledgeProvider()
+      if (!provider) return []
+      const flatten = (nodes: import("@/types/wiki").FileTreeNode[]): import("./types").PluginDocumentReference[] => nodes.flatMap((node) => [
+        { id: node.id, title: node.name, locator: node.id },
+        ...flatten(node.children),
+      ])
+      return flatten((await provider.getNodeTree()).roots)
     },
   }
 }

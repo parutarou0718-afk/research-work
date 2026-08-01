@@ -26,6 +26,14 @@ export interface PluginDocumentsApi {
   listSelectableSourcePaths: () => string[]
   listIndexedSourcePaths: () => string[]
   readText: (path: string) => Promise<string>
+  /** Optional while third-party plugins migrate to the narrow reference API. */
+  listReferences?: () => Promise<PluginDocumentReference[]>
+}
+
+export interface PluginDocumentReference {
+  id: string
+  title: string
+  locator: string
 }
 
 export interface PluginStorage {

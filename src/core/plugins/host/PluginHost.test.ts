@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest"
 import type { PandaWikiVirtualProject } from "@/domain/projects"
 import { createDefaultPluginHost, createPluginHost } from "./PluginHost"
 import { useWikiStore } from "@/stores/wiki-store"
+import { configurePandaWikiPluginKnowledgeProvider } from "./PandaWikiPluginKnowledgeBridge"
 
 vi.mock("@tauri-apps/plugin-store", () => ({
   load: vi.fn(async () => new Map<string, unknown>()),
@@ -141,5 +142,32 @@ describe("PluginHost", () => {
     expect(host.documents.listMarkdownPaths()).toEqual(["/workspace/project/wiki/paper.md"])
     await expect(host.documents.readText("/workspace/project/wiki/paper.md"))
       .resolves.toBe("content:/workspace/project/wiki/paper.md")
+  })
+
+  it("lists authorized PandaWiki nodes as references without persisting their bodies", async () => {
+    const settings = new Map<string, string>()
+    vi.stubGlobal("localStorage", {
+      getItem: (key: string) => settings.get(key) ?? null,
+      setItem: (key: string, value: string) => settings.set(key, value),
+      removeItem: (key: string) => settings.delete(key),
+    })
+    useWikiStore.getState().setActiveProject({
+      id: "pandawiki:server-a:kb-1", name: "Remote knowledge", source: "pandawiki",
+      connectionId: "server-a", knowledgeBaseId: "kb-1", scopeKey: "pandawiki:server-a:kb-1",
+      capabilities: { readKnowledge: true, search: true, chat: true, editNode: false, upload: false, conversationHistory: false, graph: false, filesystem: false },
+    })
+    configurePandaWikiPluginKnowledgeProvider({
+      listKnowledgeBases: async () => [],
+      getNode: async () => ({ id: "node-1", knowledgeBaseId: "kb-1", name: "Remote paper", content: "Body", parentId: null, navId: "nav", type: "document", status: "published", summary: "", emoji: "", updatedAt: "" }),
+      getNodeTree: async () => ({ knowledgeBaseId: "kb-1", roots: [{ id: "node-1", name: "Remote paper", parentId: null, nodeType: "document", status: "published", children: [] }] }),
+    })
+    try {
+      const references = await createDefaultPluginHost().documents.listReferences?.()
+      expect(references).toEqual([{ id: "node-1", title: "Remote paper", locator: "node-1" }])
+    } finally {
+      configurePandaWikiPluginKnowledgeProvider(null)
+      useWikiStore.getState().setActiveProject(null)
+      vi.unstubAllGlobals()
+    }
   })
 })

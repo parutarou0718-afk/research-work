@@ -24,6 +24,7 @@ import { isLocalProject, type Project } from "@/domain/projects"
 import { mapKnowledgeBaseToVirtualProject } from "@/services/providers/pandawiki/PandaWikiVirtualProject"
 import { usePandaWikiWorkspaceStore } from "@/stores/pandawiki-workspace-store"
 import { configurePandaWikiPluginRecordProvider } from "@/core/plugins/host/PandaWikiPluginRecordBridge"
+import { configurePandaWikiPluginKnowledgeProvider } from "@/core/plugins/host/PandaWikiPluginKnowledgeBridge"
 
 const pandaWikiDeployment = providerDeploymentConfig.providers.pandawiki
 const pandaWikiEnabled = pandaWikiDeployment.enabled
@@ -64,7 +65,11 @@ function App() {
 
   useEffect(() => {
     configurePandaWikiPluginRecordProvider(pandaProvider.pluginRecords)
-    return () => configurePandaWikiPluginRecordProvider(null)
+    configurePandaWikiPluginKnowledgeProvider(pandaProvider.knowledge)
+    return () => {
+      configurePandaWikiPluginRecordProvider(null)
+      configurePandaWikiPluginKnowledgeProvider(null)
+    }
   }, [pandaProvider])
 
   function isCurrentProject(proj: WikiProject): boolean {

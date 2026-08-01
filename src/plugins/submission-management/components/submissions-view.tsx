@@ -42,8 +42,17 @@ export function SubmissionsView({ host }: { host: PluginHost }) {
   useEffect(() => {
     let cancelled = false
     async function loadOptions() {
-      if (!project || project.source !== "local") {
+      if (!project) {
         setPaperOptions([])
+        return
+      }
+      if (project.source === "pandawiki") {
+        const references = await host.documents.listReferences?.() ?? []
+        if (!cancelled) setPaperOptions(references.map((reference) => ({
+          path: reference.locator,
+          title: reference.title,
+          isPaperTyped: false,
+        })))
         return
       }
       const paths = host.documents.listMarkdownPaths()
@@ -173,7 +182,7 @@ export function SubmissionsView({ host }: { host: PluginHost }) {
           mode={editing ? "edit" : "create"}
           submission={editing}
           paperOptions={paperOptions}
-          manualPaperReference={shouldUseManualSubmissionReference(project)}
+          manualPaperReference={shouldUseManualSubmissionReference(project) && paperOptions.length === 0}
           onOpenChange={setDialogOpen}
           onSave={handleSave}
         />
