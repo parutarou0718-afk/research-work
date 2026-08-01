@@ -171,12 +171,14 @@ function RemoteGraphZoomControls() {
   </div>
 }
 
-function EntityDetails({ entity, graph, onOpenEvidence }: { entity: EntityModel; graph: KnowledgeGraphModel; onOpenEvidence: (nodeId: string) => Promise<void> }) {
+export function EntityDetails({ entity, graph, onOpenEvidence }: { entity: EntityModel; graph: KnowledgeGraphModel; onOpenEvidence: (nodeId: string) => Promise<void> }) {
   const related = graph.relations.filter((relation) => relation.sourceId === entity.id || relation.targetId === entity.id)
   return <section>
     <h2 className="text-base font-semibold">{entity.name}</h2>
     <p className="mt-1 text-xs text-muted-foreground">{entity.type} · {related.length} 条关系</p>
     {Object.entries(entity.attributes).map(([key, values]) => <div key={key} className="mt-3 text-sm"><div className="text-xs font-medium text-muted-foreground">{key}</div><div className="mt-1 whitespace-pre-wrap break-words">{Array.isArray(values) ? values.join("，") : String(values)}</div></div>)}
+    <div className="mt-5 border-t pt-3 text-xs font-medium text-muted-foreground">服务器分析</div>
+    <div className="mt-1 whitespace-pre-wrap break-words text-sm">{entity.summary || "暂无服务器摘要"}</div>
     <div className="mt-5 border-t pt-3 text-xs font-medium text-muted-foreground">来源证据</div>
     {related.flatMap((relation) => relation.evidence).slice(0, 8).map((evidence) => <button key={`${evidence.nodeId}:${evidence.nodeReleaseId}`} type="button" onClick={() => { void onOpenEvidence(evidence.nodeId) }} className="mt-2 block w-full rounded border p-2 text-left text-xs hover:bg-accent"><span className="line-clamp-3">{evidence.excerpt || "打开来源文档"}</span></button>)}
     {related.length === 0 && <p className="mt-2 text-sm text-muted-foreground">该节点暂无可见关系。</p>}

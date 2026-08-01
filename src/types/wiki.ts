@@ -113,6 +113,7 @@ export interface EntityModel {
   id: string
   name: string
   type: string
+  summary?: string
   attributes: Record<string, unknown>
 }
 
