@@ -62,10 +62,11 @@ function createStorage() {
 function createRemoteStorage() {
   const records: PluginRecordModel[] = []
   const created: Array<{ pluginId: string; recordType: string; payload: Record<string, unknown>; access: PluginRecordModel["access"] }> = []
+  const current = new Map<string, unknown>()
   const storage: PluginStorage = {
     exists: async () => false,
-    readJson: async () => null,
-    writeJson: async () => {},
+    readJson: async <T,>(name: string) => current.get(name) as T | null ?? null,
+    writeJson: async <T,>(name: string, value: T) => { current.set(name, value) },
     readLegacyJson: async () => null,
   }
   const host: PluginHost = {
@@ -99,7 +100,7 @@ function createRemoteStorage() {
     settings: { forPlugin: () => ({ get: () => null, set: () => {}, remove: () => {} }) },
     notifications: { info: () => {}, warning: () => {}, error: () => {} },
   }
-  return { host, created, records }
+  return { host, created, records, current }
 }
 
 describe("submission plugin persistence", () => {
@@ -139,20 +140,17 @@ describe("submission plugin persistence", () => {
     expect(state.current.has(SUBMISSIONS_FILE_NAME)).toBe(false)
   })
 
-  it("stores a remote submission through the server record port with private access by default", async () => {
+  it("stores a remote submission in local plugin storage rather than the server record port", async () => {
     const remote = createRemoteStorage()
     configureSubmissionStorage(remote.host)
 
     await saveSubmissions([makeSubmission({ id: "remote-submission" })])
 
-    expect(remote.created).toEqual([
-      expect.objectContaining({
-        pluginId: "official.submission-management",
-        recordType: "submission",
-        payload: expect.objectContaining({ id: "remote-submission" }),
-        access: { visibility: "private", sharedGroupIds: [], allowCollaborativeEdit: false },
-      }),
-    ])
+    expect(remote.created).toEqual([])
+    expect(remote.current.get(SUBMISSIONS_FILE_NAME)).toMatchObject({
+      version: 1,
+      items: [makeSubmission({ id: "remote-submission" })],
+    })
     await expect(loadSubmissions()).resolves.toEqual([makeSubmission({ id: "remote-submission" })])
   })
 })
