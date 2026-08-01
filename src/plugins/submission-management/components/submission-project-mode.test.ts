@@ -7,6 +7,8 @@ describe("shouldUseManualSubmissionReference", () => {
       id: "pandawiki:server:kb",
       name: "Remote knowledge",
       source: "pandawiki",
+      connectionId: "server",
+      knowledgeBaseId: "kb",
       scopeKey: "pandawiki:server:kb",
     })).toBe(true)
   })

@@ -7,7 +7,7 @@ import { submissionManagementManifest } from "./manifest"
 import { SubmissionManagementPage } from "./SubmissionManagementPage"
 
 export function createSubmissionManagementPlugin(host: PluginHost): LlmWikiPlugin {
-  configureSubmissionStorage(host.storage.forPlugin(submissionManagementManifest.id))
+  configureSubmissionStorage(host)
   return {
   manifest: submissionManagementManifest,
   navigationItems: [

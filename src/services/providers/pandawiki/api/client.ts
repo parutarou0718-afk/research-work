@@ -118,6 +118,10 @@ export class PandaWikiClient {
     }, { allowEmptySuccessData: true })
   }
 
+  delete<T>(path: string): Promise<T> {
+    return this.request<T>(path, { method: "DELETE" })
+  }
+
   private async request<T>(
     path: string,
     init: RequestInit,

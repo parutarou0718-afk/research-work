@@ -3,6 +3,8 @@ import { normalizePath } from "@/lib/path-utils"
 import { useWikiStore } from "@/stores/wiki-store"
 import type { FileNode } from "@/types/wiki"
 import { createTauriRemotePluginDataStore, remotePluginStorageKey, type RemotePluginDataStore } from "./RemotePluginStore"
+import { getPandaWikiPluginRecordProvider } from "./PandaWikiPluginRecordBridge"
+import type { PluginRecordProvider } from "@/services/providers/contracts/PluginRecordProvider"
 import type {
   PluginDocumentsApi,
   PluginHost,
@@ -22,6 +24,7 @@ interface PluginHostDependencies {
   settingsStorage: Storage | Map<string, string>
   notify: PluginNotificationApi
   remoteData?: RemotePluginDataStore
+  remoteRecords?: PluginRecordProvider
 }
 
 function pluginPathSegment(pluginId: string): string {
@@ -54,6 +57,13 @@ function removeSetting(storage: Storage | Map<string, string>, key: string): voi
 
 export function createPluginHost(deps: PluginHostDependencies): PluginHost {
   const remoteData = deps.remoteData
+  const remoteRecords = deps.remoteRecords
+  const requireRemoteProject = () => {
+    const project = deps.project.current()
+    if (!project || project.source !== "pandawiki") throw new Error("Server plugin records require an open PandaWiki knowledge base.")
+    return project
+  }
+  const requireRecordProvider = () => remoteRecords ?? getPandaWikiPluginRecordProvider() ?? (() => { throw new Error("PandaWiki plugin record provider is unavailable.") })()
   return {
     project: deps.project,
     documents: deps.documents,
@@ -106,6 +116,28 @@ export function createPluginHost(deps: PluginHostDependencies): PluginHost {
           }
         },
       }),
+    },
+    records: {
+      list: async (pluginId, recordType) => {
+        const project = requireRemoteProject()
+        return requireRecordProvider().list({ knowledgeBaseId: project.knowledgeBaseId, pluginId, recordType })
+      },
+      create: async (input) => {
+        const project = requireRemoteProject()
+        return requireRecordProvider().create({ ...input, knowledgeBaseId: project.knowledgeBaseId })
+      },
+      update: async (id, input) => {
+        const project = requireRemoteProject()
+        return requireRecordProvider().update(id, { ...input, knowledgeBaseId: project.knowledgeBaseId })
+      },
+      softDelete: async (id, pluginId, recordType) => {
+        const project = requireRemoteProject()
+        return requireRecordProvider().softDelete(id, { knowledgeBaseId: project.knowledgeBaseId, pluginId, recordType })
+      },
+      restore: async (id, pluginId, recordType) => {
+        const project = requireRemoteProject()
+        return requireRecordProvider().restore(id, { knowledgeBaseId: project.knowledgeBaseId, pluginId, recordType })
+      },
     },
     settings: {
       forPlugin: (pluginId) => {

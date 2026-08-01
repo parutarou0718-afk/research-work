@@ -9,6 +9,8 @@ export interface PandaWikiPluginProject {
   id: string
   name: string
   source: "pandawiki"
+  connectionId: string
+  knowledgeBaseId: string
   scopeKey: string
 }
 
@@ -33,6 +35,14 @@ export interface PluginStorage {
   readLegacyJson: <T>(fileName: string) => Promise<T | null>
 }
 
+export interface PluginRecordStore {
+  list: (pluginId: string, recordType: string) => Promise<import("@/services/providers/contracts/PluginRecordProvider").PluginRecordModel[]>
+  create: (input: Omit<import("@/services/providers/contracts/PluginRecordProvider").PluginRecordInput, "knowledgeBaseId">) => Promise<import("@/services/providers/contracts/PluginRecordProvider").PluginRecordModel>
+  update: (id: string, input: Omit<import("@/services/providers/contracts/PluginRecordProvider").PluginRecordInput, "knowledgeBaseId">) => Promise<import("@/services/providers/contracts/PluginRecordProvider").PluginRecordModel>
+  softDelete: (id: string, pluginId: string, recordType: string) => Promise<void>
+  restore: (id: string, pluginId: string, recordType: string) => Promise<void>
+}
+
 export interface PluginSettings {
   get: (key: string) => string | null
   set: (key: string, value: string) => void
@@ -49,6 +59,7 @@ export interface PluginHost {
   project: PluginProjectApi
   documents: PluginDocumentsApi
   storage: { forPlugin: (pluginId: string) => PluginStorage }
+  records: PluginRecordStore
   settings: { forPlugin: (pluginId: string) => PluginSettings }
   notifications: PluginNotificationApi
 }

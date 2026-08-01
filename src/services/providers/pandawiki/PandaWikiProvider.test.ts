@@ -15,6 +15,11 @@ function createGateway(): PandaWikiAuthGateway {
     updateNode: vi.fn(async () => undefined),
     importDocument: vi.fn(async () => ({ nodeId: "node-2", name: "paper.pdf" })),
     getKnowledgeGraph: vi.fn(async () => ({ entities: [], relations: [] })),
+    listPluginRecords: vi.fn(async () => []),
+    createPluginRecord: vi.fn(async () => { throw new Error("not used") }),
+    updatePluginRecord: vi.fn(async () => { throw new Error("not used") }),
+    deletePluginRecord: vi.fn(async () => undefined),
+    restorePluginRecord: vi.fn(async () => undefined),
   }
 }
 

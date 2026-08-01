@@ -23,6 +23,7 @@ import type { AuthSession, LoginInput, WikiProject } from "@/types/wiki"
 import { isLocalProject, type Project } from "@/domain/projects"
 import { mapKnowledgeBaseToVirtualProject } from "@/services/providers/pandawiki/PandaWikiVirtualProject"
 import { usePandaWikiWorkspaceStore } from "@/stores/pandawiki-workspace-store"
+import { configurePandaWikiPluginRecordProvider } from "@/core/plugins/host/PandaWikiPluginRecordBridge"
 
 const pandaWikiDeployment = providerDeploymentConfig.providers.pandawiki
 const pandaWikiEnabled = pandaWikiDeployment.enabled
@@ -60,6 +61,11 @@ function App() {
   const setPandaWikiScope = usePandaWikiWorkspaceStore((s) => s.setActiveScope)
   const [pandaWikiProjectsLoading, setPandaWikiProjectsLoading] = useState(false)
   const [pandaWikiProjectsError, setPandaWikiProjectsError] = useState<string | null>(null)
+
+  useEffect(() => {
+    configurePandaWikiPluginRecordProvider(pandaProvider.pluginRecords)
+    return () => configurePandaWikiPluginRecordProvider(null)
+  }, [pandaProvider])
 
   function isCurrentProject(proj: WikiProject): boolean {
     const current = useWikiStore.getState().project

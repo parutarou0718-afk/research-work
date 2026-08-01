@@ -66,6 +66,8 @@ describe("PluginHost", () => {
           id: "pandawiki:server-a:kb-1",
           name: "Remote knowledge",
           source: "pandawiki" as const,
+          connectionId: "server-a",
+          knowledgeBaseId: "kb-1",
           scopeKey: "pandawiki:server-a:kb-1",
         }),
         subscribe: () => () => {},

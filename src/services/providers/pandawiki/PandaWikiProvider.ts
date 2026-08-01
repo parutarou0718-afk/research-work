@@ -5,6 +5,7 @@ import type { SearchProvider } from "../contracts/SearchProvider"
 import type { NodeEditorProvider, NodeUpdateInput } from "../contracts/NodeEditorProvider"
 import type { DocumentProvider, RemoteDocumentImportInput, RemoteDocumentImportResult } from "../contracts/DocumentProvider"
 import type { GraphProvider } from "../contracts/GraphProvider"
+import type { PluginRecordInput, PluginRecordProvider } from "../contracts/PluginRecordProvider"
 import type { UserDTO } from "./dto/AuthDTO"
 import { PandaWikiAuthApi } from "./api/auth-api"
 import { PandaWikiKnowledgeApi } from "./api/knowledge-api"
@@ -12,6 +13,7 @@ import { PandaWikiKnowledgeSearchApi } from "./api/knowledge-search-api"
 import { PandaWikiNodeApi } from "./api/node-api"
 import { PandaWikiDocumentApi } from "./api/document-api"
 import { PandaWikiKnowledgeGraphApi } from "./api/knowledge-graph-api"
+import { PandaWikiPluginRecordApi } from "./api/plugin-record-api"
 import { PandaWikiApiError, PandaWikiClient } from "./api/client"
 import type { KnowledgeDTO } from "./dto/KnowledgeDTO"
 import type { KnowledgeSearchResponseDTO } from "./dto/KnowledgeSearchDTO"
@@ -20,6 +22,7 @@ import { mapKnowledgeDto } from "./mapper/KnowledgeMapper"
 import { mapKnowledgeSearchDto } from "./mapper/KnowledgeSearchMapper"
 import { mapNodeDto, mapNodeTreeDto } from "./mapper/NodeMapper"
 import { mapKnowledgeGraphDto } from "./mapper/GraphMapper"
+import { mapPluginRecordDto, mapPluginRecordInput } from "./mapper/PluginRecordMapper"
 import type { SessionStore } from "./session/SessionStore"
 import { createDefaultSessionStore } from "./session/TauriSessionStore"
 import { pandaWikiCapabilities } from "./capabilities"
@@ -41,6 +44,11 @@ export interface PandaWikiAuthGateway {
   updateNode(input: NodeUpdateInput): Promise<void>
   importDocument(input: RemoteDocumentImportInput): Promise<RemoteDocumentImportResult>
   getKnowledgeGraph(kbId: string): Promise<import("./dto/GraphDTO").KnowledgeGraphDTO>
+  listPluginRecords(kbId: string, pluginId: string, recordType: string): Promise<import("./dto/PluginRecordDTO").PluginRecordDTO[]>
+  createPluginRecord(input: import("./dto/PluginRecordDTO").PluginRecordWriteDTO): Promise<import("./dto/PluginRecordDTO").PluginRecordDTO>
+  updatePluginRecord(id: string, input: import("./dto/PluginRecordDTO").PluginRecordWriteDTO): Promise<import("./dto/PluginRecordDTO").PluginRecordDTO>
+  deletePluginRecord(id: string, kbId: string, pluginId: string, recordType: string): Promise<void>
+  restorePluginRecord(id: string, kbId: string, pluginId: string, recordType: string): Promise<void>
 }
 
 export interface PandaWikiAuthenticationProvider extends ProviderBundle {
@@ -49,6 +57,7 @@ export interface PandaWikiAuthenticationProvider extends ProviderBundle {
   nodeEditor: NodeEditorProvider
   documents: DocumentProvider
   graph: GraphProvider
+  pluginRecords: PluginRecordProvider
   /**
    * Workspace selection is kept beside the adapter, never inferred from a
    * virtual project's display name or a local filesystem path.
@@ -77,6 +86,7 @@ async function createDefaultGateway(baseUrl: string): Promise<PandaWikiAuthGatew
   const nodes = new PandaWikiNodeApi(client)
   const documents = new PandaWikiDocumentApi(client)
   const graph = new PandaWikiKnowledgeGraphApi(client)
+  const pluginRecords = new PandaWikiPluginRecordApi(client)
   return {
     setAccessToken: (token) => client.setAccessToken(token),
     login: (account, password) => auth.login(account, password),
@@ -89,6 +99,11 @@ async function createDefaultGateway(baseUrl: string): Promise<PandaWikiAuthGatew
     updateNode: (input) => nodes.updateNode(input),
     importDocument: (input) => documents.importDocument(input),
     getKnowledgeGraph: (kbId) => graph.getGraph(kbId),
+    listPluginRecords: (kbId, pluginId, recordType) => pluginRecords.list(kbId, pluginId, recordType),
+    createPluginRecord: (input) => pluginRecords.create(input),
+    updatePluginRecord: (id, input) => pluginRecords.update(id, input),
+    deletePluginRecord: (id, kbId, pluginId, recordType) => pluginRecords.softDelete(id, kbId, pluginId, recordType),
+    restorePluginRecord: (id, kbId, pluginId, recordType) => pluginRecords.restore(id, kbId, pluginId, recordType),
   }
 }
 
@@ -209,6 +224,19 @@ export function createPandaWikiProvider(options: PandaWikiProviderOptions): Pand
       mapKnowledgeGraphDto(await (await ensureGateway()).getKnowledgeGraph(knowledgeBaseId)),
   }
 
+  const pluginRecords: PluginRecordProvider = {
+    list: async ({ knowledgeBaseId, pluginId, recordType }) =>
+      (await (await ensureGateway()).listPluginRecords(knowledgeBaseId, pluginId, recordType)).map(mapPluginRecordDto),
+    create: async (input: PluginRecordInput) =>
+      mapPluginRecordDto(await (await ensureGateway()).createPluginRecord(mapPluginRecordInput(input))),
+    update: async (id: string, input: PluginRecordInput) =>
+      mapPluginRecordDto(await (await ensureGateway()).updatePluginRecord(id, mapPluginRecordInput(input))),
+    softDelete: async (id, { knowledgeBaseId, pluginId, recordType }) =>
+      (await ensureGateway()).deletePluginRecord(id, knowledgeBaseId, pluginId, recordType),
+    restore: async (id, { knowledgeBaseId, pluginId, recordType }) =>
+      (await ensureGateway()).restorePluginRecord(id, knowledgeBaseId, pluginId, recordType),
+  }
+
   return {
     id: "pandawiki",
     type: "pandawiki",
@@ -223,6 +251,7 @@ export function createPandaWikiProvider(options: PandaWikiProviderOptions): Pand
     nodeEditor,
     documents,
     graph,
+    pluginRecords,
     lifecycle: {
       initialize: async () => {
         const nextGateway = await ensureGateway()

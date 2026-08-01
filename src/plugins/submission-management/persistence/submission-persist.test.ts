@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest"
-import type { PluginStorage } from "@/core/plugins/host/types"
+import type { PluginHost, PluginStorage } from "@/core/plugins/host/types"
+import type { PluginRecordModel } from "@/services/providers/contracts/PluginRecordProvider"
 import type { Submission } from "../domain/submission"
 import {
   configureSubmissionStorage,
@@ -41,7 +42,64 @@ function createStorage() {
     writeJson: async <T,>(name: string, value: T) => { current.set(name, value) },
     readLegacyJson: async <T,>(name: string) => legacy.get(name) as T | null ?? null,
   }
-  return { storage, current, legacy }
+  const host: PluginHost = {
+    project: { current: () => ({ id: "local-1", name: "Local", source: "local", path: "/project" }), subscribe: () => () => {} },
+    documents: { listMarkdownPaths: () => [], listSelectableSourcePaths: () => [], listIndexedSourcePaths: () => [], readText: async () => "" },
+    storage: { forPlugin: () => storage },
+    records: {
+      list: async () => [],
+      create: async () => { throw new Error("not used") },
+      update: async () => { throw new Error("not used") },
+      softDelete: async () => {},
+      restore: async () => {},
+    },
+    settings: { forPlugin: () => ({ get: () => null, set: () => {}, remove: () => {} }) },
+    notifications: { info: () => {}, warning: () => {}, error: () => {} },
+  }
+  return { storage, current, legacy, host }
+}
+
+function createRemoteStorage() {
+  const records: PluginRecordModel[] = []
+  const created: Array<{ pluginId: string; recordType: string; payload: Record<string, unknown>; access: PluginRecordModel["access"] }> = []
+  const storage: PluginStorage = {
+    exists: async () => false,
+    readJson: async () => null,
+    writeJson: async () => {},
+    readLegacyJson: async () => null,
+  }
+  const host: PluginHost = {
+    project: {
+      current: () => ({ id: "pandawiki:connection-1:kb-1", name: "Remote", source: "pandawiki", connectionId: "connection-1", knowledgeBaseId: "kb-1", scopeKey: "connection-1:kb-1" }),
+      subscribe: () => () => {},
+    },
+    documents: { listMarkdownPaths: () => [], listSelectableSourcePaths: () => [], listIndexedSourcePaths: () => [], readText: async () => "" },
+    storage: { forPlugin: () => storage },
+    records: {
+      list: async () => records,
+      create: async (input) => {
+        created.push(input)
+        const record: PluginRecordModel = {
+          id: `record-${created.length}`,
+          knowledgeBaseId: "kb-1",
+          pluginId: input.pluginId,
+          recordType: input.recordType,
+          payload: input.payload,
+          access: input.access,
+          createdAt: "2026-08-01T00:00:00Z",
+          updatedAt: "2026-08-01T00:00:00Z",
+        }
+        records.push(record)
+        return record
+      },
+      update: async () => { throw new Error("not used") },
+      softDelete: async () => {},
+      restore: async () => {},
+    },
+    settings: { forPlugin: () => ({ get: () => null, set: () => {}, remove: () => {} }) },
+    notifications: { info: () => {}, warning: () => {}, error: () => {} },
+  }
+  return { host, created, records }
 }
 
 describe("submission plugin persistence", () => {
@@ -49,7 +107,7 @@ describe("submission plugin persistence", () => {
 
   beforeEach(() => {
     state = createStorage()
-    configureSubmissionStorage(state.storage)
+    configureSubmissionStorage(state.host)
   })
 
   it("uses namespaced plugin storage for new submission data", async () => {
@@ -79,5 +137,22 @@ describe("submission plugin persistence", () => {
 
     await expect(loadSubmissions()).resolves.toEqual([])
     expect(state.current.has(SUBMISSIONS_FILE_NAME)).toBe(false)
+  })
+
+  it("stores a remote submission through the server record port with private access by default", async () => {
+    const remote = createRemoteStorage()
+    configureSubmissionStorage(remote.host)
+
+    await saveSubmissions([makeSubmission({ id: "remote-submission" })])
+
+    expect(remote.created).toEqual([
+      expect.objectContaining({
+        pluginId: "official.submission-management",
+        recordType: "submission",
+        payload: expect.objectContaining({ id: "remote-submission" }),
+        access: { visibility: "private", sharedAuthGroupIds: [], allowCollaborativeEdit: false },
+      }),
+    ])
+    await expect(loadSubmissions()).resolves.toEqual([makeSubmission({ id: "remote-submission" })])
   })
 })
