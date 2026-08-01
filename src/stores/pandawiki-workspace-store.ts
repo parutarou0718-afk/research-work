@@ -12,11 +12,13 @@ interface PandaWikiWorkspaceState {
   session: AuthSession | null
   projects: PandaWikiVirtualProject[]
   activeScopeKey: ProviderScopeKey | null
+  selectedGraphEntityId: string | null
   generation: number
   controller: AbortController | null
   setSession(session: AuthSession | null): void
   setProjects(projects: PandaWikiVirtualProject[]): void
   setActiveScope(scopeKey: ProviderScopeKey | null): void
+  setSelectedGraphEntity(entityId: string | null): void
   beginScopeRequest(): ScopeRequest
   isCurrentRequest(request: Pick<ScopeRequest, "scopeKey" | "generation">): boolean
   reset(): void
@@ -30,6 +32,7 @@ export const usePandaWikiWorkspaceStore = create<PandaWikiWorkspaceState>((set, 
   session: null,
   projects: [],
   activeScopeKey: null,
+  selectedGraphEntityId: null,
   generation: 0,
   controller: null,
   setSession: (session) => set({ session }),
@@ -38,10 +41,12 @@ export const usePandaWikiWorkspaceStore = create<PandaWikiWorkspaceState>((set, 
     abort(get().controller)
     set((state) => ({
       activeScopeKey,
+      selectedGraphEntityId: null,
       generation: state.generation + 1,
       controller: activeScopeKey ? new AbortController() : null,
     }))
   },
+  setSelectedGraphEntity: (selectedGraphEntityId) => set({ selectedGraphEntityId }),
   beginScopeRequest: () => {
     const state = get()
     if (!state.activeScopeKey || !state.controller) {
@@ -63,6 +68,7 @@ export const usePandaWikiWorkspaceStore = create<PandaWikiWorkspaceState>((set, 
       session: null,
       projects: [],
       activeScopeKey: null,
+      selectedGraphEntityId: null,
       generation: state.generation + 1,
       controller: null,
     }))

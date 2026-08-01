@@ -25,7 +25,7 @@ import { mapKnowledgeBaseToVirtualProject } from "@/services/providers/pandawiki
 import { usePandaWikiWorkspaceStore } from "@/stores/pandawiki-workspace-store"
 
 const pandaWikiDeployment = providerDeploymentConfig.providers.pandawiki
-const requiresPandaWikiLogin = providerDeploymentConfig.defaultProvider === "pandawiki" && pandaWikiDeployment.enabled
+const pandaWikiEnabled = pandaWikiDeployment.enabled
 
 function connectionIdFromServerUrl(serverUrl: string): string {
   try {
@@ -54,6 +54,7 @@ function App() {
   const [providerSession, setProviderSession] = useState<AuthSession | null>(null)
   const [providerConnectionError, setProviderConnectionError] = useState<string | null>(null)
   const [providerServerUrl, setProviderServerUrl] = useState(pandaWikiDeployment.baseUrl)
+  const [showProviderLogin, setShowProviderLogin] = useState(false)
   const pandaWikiProjects = usePandaWikiWorkspaceStore((s) => s.projects)
   const setPandaWikiProjects = usePandaWikiWorkspaceStore((s) => s.setProjects)
   const setPandaWikiScope = usePandaWikiWorkspaceStore((s) => s.setActiveScope)
@@ -307,18 +308,6 @@ function App() {
   // Auto-open last project on startup
   useEffect(() => {
     async function init() {
-      if (requiresPandaWikiLogin) {
-        try {
-          await pandaProvider.lifecycle.initialize()
-          setProviderSession(pandaProvider.auth.getSession())
-          setProviderConnectionError(null)
-        } catch {
-          setProviderConnectionError("Unable to reach the configured PandaWiki server.")
-        } finally {
-          setLoading(false)
-        }
-        return
-      }
       try {
         const savedZoom = await loadZoomLevel()
         applyDocumentZoom(savedZoom)
@@ -449,10 +438,30 @@ function App() {
     setProviderServerUrl(credentials.serverUrl)
     setProviderSession(session)
     setProviderConnectionError(null)
+    setShowProviderLogin(false)
+  }
+
+  async function handleConnectPandaWiki() {
+    if (!pandaWikiEnabled) return
+    setProviderConnectionError(null)
+    try {
+      await pandaProvider.lifecycle.initialize()
+      const restoredSession = pandaProvider.auth.getSession()
+      if (restoredSession) {
+        setProviderSession(restoredSession)
+        return
+      }
+    } catch {
+      // The user explicitly selected the server card. Show its diagnostic in
+      // the connection form, while keeping the local-project welcome screen
+      // available through its Cancel action.
+      setProviderConnectionError("Unable to reach the configured PandaWiki server.")
+    }
+    setShowProviderLogin(true)
   }
 
   useEffect(() => {
-    if (!requiresPandaWikiLogin || !providerSession) return
+    if (!providerSession) return
     let cancelled = false
     setPandaWikiProjectsLoading(true)
     setPandaWikiProjectsError(null)
@@ -680,12 +689,13 @@ function App() {
     )
   }
 
-  if (requiresPandaWikiLogin && !providerSession) {
+  if (showProviderLogin) {
     return (
       <ProviderLogin
         defaultServerUrl={providerServerUrl}
         onLogin={handleProviderLogin}
         connectionError={providerConnectionError}
+        onCancel={() => setShowProviderLogin(false)}
       />
     )
   }
@@ -700,6 +710,8 @@ function App() {
           pandaWikiProjects={pandaWikiProjects}
           pandaWikiProjectsLoading={pandaWikiProjectsLoading}
           pandaWikiProjectsError={pandaWikiProjectsError}
+          pandaWikiConnected={Boolean(providerSession)}
+          onConnectPandaWiki={() => { void handleConnectPandaWiki() }}
         />
         <CreateProjectDialog
           open={showCreateDialog}

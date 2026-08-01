@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react"
-import { ChevronDown, ChevronRight, Network } from "lucide-react"
-import { buildRemoteKnowledgeNavigation } from "@/lib/remote-knowledge-navigation"
+import { ChevronDown, ChevronRight, FileText, Layout, Lightbulb, Network, Users } from "lucide-react"
+import { buildRemoteKnowledgeNavigationDisplay, type RemoteKnowledgeIcon } from "@/lib/remote-knowledge-navigation"
 import { useWikiStore } from "@/stores/wiki-store"
 import type { KnowledgeGraphModel } from "@/types/wiki"
 import type { GraphProvider } from "@/services/providers/contracts/GraphProvider"
 import { isPandaWikiProject } from "@/domain/projects"
+import { usePandaWikiWorkspaceStore } from "@/stores/pandawiki-workspace-store"
 
 interface PandaWikiKnowledgeNavigationProps {
   graphProvider?: GraphProvider
@@ -17,6 +18,7 @@ interface PandaWikiKnowledgeNavigationProps {
 export function PandaWikiKnowledgeNavigation({ graphProvider }: PandaWikiKnowledgeNavigationProps) {
   const project = useWikiStore((state) => state.activeProject)
   const setActiveView = useWikiStore((state) => state.setActiveView)
+  const setSelectedGraphEntity = usePandaWikiWorkspaceStore((state) => state.setSelectedGraphEntity)
   const [graph, setGraph] = useState<KnowledgeGraphModel | null>(null)
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({})
 
@@ -39,7 +41,7 @@ export function PandaWikiKnowledgeNavigation({ graphProvider }: PandaWikiKnowled
   if (!graphProvider || !isPandaWikiProject(project)) return null
   if (!graph) return <p className="px-3 py-2 text-xs text-muted-foreground">Knowledge categories appear after the server graph is available.</p>
 
-  const sections = buildRemoteKnowledgeNavigation(graph)
+  const sections = buildRemoteKnowledgeNavigationDisplay(graph)
   if (sections.length === 0) return <p className="px-3 py-2 text-xs text-muted-foreground">This knowledge base has no configured knowledge categories yet.</p>
 
   return (
@@ -57,8 +59,9 @@ export function PandaWikiKnowledgeNavigation({ graphProvider }: PandaWikiKnowled
               onClick={() => setOpenSections((current) => ({ ...current, [section.id]: !expanded }))}
             >
               {expanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+              <SectionIcon icon={section.icon} className={section.colorClass} />
               <span>{section.label}</span>
-              <span className="ml-auto text-xs font-normal text-muted-foreground">{section.entities.length}</span>
+              <span className="ml-auto text-xs font-normal text-muted-foreground">{section.count}</span>
             </button>
             {expanded && section.entities.map((entity) => (
               <button
@@ -66,7 +69,10 @@ export function PandaWikiKnowledgeNavigation({ graphProvider }: PandaWikiKnowled
                 type="button"
                 className="block w-full truncate px-7 py-1 text-left text-sm text-muted-foreground hover:bg-accent hover:text-foreground"
                 title={entity.name}
-                onClick={() => setActiveView("graph")}
+                onClick={() => {
+                  setSelectedGraphEntity(entity.id)
+                  setActiveView("graph")
+                }}
               >
                 {entity.name}
               </button>
@@ -76,4 +82,9 @@ export function PandaWikiKnowledgeNavigation({ graphProvider }: PandaWikiKnowled
       })}
     </div>
   )
+}
+
+function SectionIcon({ icon, className }: { icon: RemoteKnowledgeIcon; className: string }) {
+  const Icon = icon === "overview" ? Layout : icon === "entity" ? Users : icon === "concept" ? Lightbulb : icon === "source" ? FileText : Network
+  return <Icon className={`h-3.5 w-3.5 shrink-0 ${className}`} />
 }

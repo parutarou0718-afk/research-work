@@ -6,6 +6,7 @@ import type { PandaWikiVirtualProject, Project, WikiProject } from "@/types/wiki
 import { createLocalProject } from "@/domain/projects"
 import { useTranslation } from "react-i18next"
 import { PandaWikiProjectList } from "./pandawiki-project-list"
+import { PandaWikiConnectCard } from "./pandawiki-connect-card"
 
 interface WelcomeScreenProps {
   onCreateProject: () => void
@@ -14,6 +15,8 @@ interface WelcomeScreenProps {
   pandaWikiProjects?: PandaWikiVirtualProject[]
   pandaWikiProjectsLoading?: boolean
   pandaWikiProjectsError?: string | null
+  pandaWikiConnected?: boolean
+  onConnectPandaWiki: () => void
 }
 
 export function WelcomeScreen({
@@ -23,6 +26,8 @@ export function WelcomeScreen({
   pandaWikiProjects = [],
   pandaWikiProjectsLoading = false,
   pandaWikiProjectsError = null,
+  pandaWikiConnected = false,
+  onConnectPandaWiki,
 }: WelcomeScreenProps) {
   const { t } = useTranslation()
   const [recentProjects, setRecentProjects] = useState<WikiProject[]>([])
@@ -94,7 +99,8 @@ export function WelcomeScreen({
             </div>
           </div>
         )}
-        {(pandaWikiProjectsLoading || pandaWikiProjectsError || pandaWikiProjects.length > 0) && (
+        <PandaWikiConnectCard connected={pandaWikiConnected} onConnect={onConnectPandaWiki} />
+        {pandaWikiConnected && (pandaWikiProjectsLoading || pandaWikiProjectsError || pandaWikiProjects.length > 0) && (
           <PandaWikiProjectList
             projects={pandaWikiProjects}
             loading={pandaWikiProjectsLoading}

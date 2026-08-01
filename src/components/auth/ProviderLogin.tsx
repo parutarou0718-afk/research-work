@@ -9,6 +9,7 @@ interface ProviderLoginProps {
   defaultServerUrl: string
   onLogin(credentials: LoginInput): Promise<void>
   connectionError?: string | null
+  onCancel?: () => void
 }
 
 export function validateProviderLoginInput(input: LoginInput): string | null {
@@ -39,7 +40,7 @@ function loginErrorMessage(error: unknown): string {
   }
 }
 
-export function ProviderLogin({ defaultServerUrl, onLogin, connectionError = null }: ProviderLoginProps) {
+export function ProviderLogin({ defaultServerUrl, onLogin, connectionError = null, onCancel }: ProviderLoginProps) {
   const [serverUrl, setServerUrl] = useState(defaultServerUrl)
   const [account, setAccount] = useState("")
   const [password, setPassword] = useState("")
@@ -86,9 +87,10 @@ export function ProviderLogin({ defaultServerUrl, onLogin, connectionError = nul
           <Input id="pandawiki-password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" disabled={submitting} />
         </div>
         {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
-        <Button className="w-full" type="submit" disabled={submitting}>
-          {submitting ? "Signing in…" : "Sign in"}
-        </Button>
+        <div className="flex gap-2">
+          {onCancel && <Button className="flex-1" type="button" variant="outline" disabled={submitting} onClick={onCancel}>返回本地项目</Button>}
+          <Button className="flex-1" type="submit" disabled={submitting}>{submitting ? "Signing in…" : "Sign in"}</Button>
+        </div>
       </form>
     </main>
   )
