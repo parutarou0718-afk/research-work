@@ -89,7 +89,7 @@ describe("PandaWiki mappers", () => {
           enabled: true,
         }],
       },
-      entities: [{ id: "concept-1", name: "Causal path", type: "concept", attributes: { argument: ["A causes B"] } }],
+      entities: [{ id: "concept-1", name: "Causal path", type: "concept", summary: "A server-generated, permission-filtered explanation.", attributes: { argument: ["A causes B"] } }],
       relations: [],
     })).toEqual({
       schema: {
@@ -115,7 +115,7 @@ describe("PandaWiki mappers", () => {
           enabled: true,
         }],
       },
-      entities: [{ id: "concept-1", name: "Causal path", type: "concept", attributes: { argument: ["A causes B"] } }],
+      entities: [{ id: "concept-1", name: "Causal path", type: "concept", summary: "A server-generated, permission-filtered explanation.", attributes: { argument: ["A causes B"] } }],
       relations: [],
     })
   })

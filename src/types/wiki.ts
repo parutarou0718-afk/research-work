@@ -113,6 +113,8 @@ export interface EntityModel {
   id: string
   name: string
   type: string
+  /** A server projection, never a locally synthesized source summary. */
+  summary?: string
   attributes: Record<string, unknown>
 }
 

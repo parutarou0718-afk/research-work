@@ -2,6 +2,8 @@ export interface EntityDTO {
   id: string
   name: string
   type: string
+  /** Permission-filtered entity summary generated and stored by PandaWiki. */
+  summary?: string
   attributes?: Record<string, unknown>
 }
 

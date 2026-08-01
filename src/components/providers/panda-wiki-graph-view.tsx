@@ -4,13 +4,14 @@ import forceAtlas2 from "graphology-layout-forceatlas2"
 import { SigmaContainer, useLoadGraph, useRegisterEvents, useSigma } from "@react-sigma/core"
 import "@react-sigma/core/lib/style.css"
 import { Filter, Maximize, Network, RefreshCw, RotateCcw, Search, ZoomIn, ZoomOut } from "lucide-react"
-import type { EntityModel, KnowledgeGraphModel } from "@/types/wiki"
+import type { KnowledgeGraphModel } from "@/types/wiki"
 import { useWikiStore } from "@/stores/wiki-store"
 import { usePandaWikiWorkspaceStore } from "@/stores/pandawiki-workspace-store"
 import type { GraphProvider } from "@/services/providers/contracts/GraphProvider"
 import type { KnowledgeProvider } from "@/services/providers/contracts/KnowledgeProvider"
 import { isPandaWikiProject } from "@/domain/projects"
 import { applyRemoteGraphFilters, buildRemoteGraphDisplay, remoteGraphEntityTypes, type RemoteGraphDisplay } from "@/lib/remote-graph-display"
+import { PandaWikiGraphEntityDetails } from "./panda-wiki-graph-entity-details"
 
 interface PandaWikiGraphViewProps {
   graphProvider?: GraphProvider
@@ -122,7 +123,7 @@ export function PandaWikiGraphView({ graphProvider, knowledgeProvider }: PandaWi
           </div>
         </div>
         <aside className="min-h-0 overflow-y-auto p-4">
-          {selectedEntity ? <EntityDetails entity={selectedEntity} graph={graph} onOpenEvidence={openEvidence} /> : <div className="text-sm text-muted-foreground">选择一个节点查看它的属性、关系与来源证据。</div>}
+          {selectedEntity ? <PandaWikiGraphEntityDetails entity={selectedEntity} graph={graph} onOpenEvidence={openEvidence} /> : <div className="text-sm text-muted-foreground">选择一个节点查看它的属性、关系与来源证据。</div>}
         </aside>
       </div>
     </section>
@@ -169,18 +170,6 @@ function RemoteGraphZoomControls() {
     <button type="button" className="rounded border bg-background/90 p-1.5 shadow-sm hover:bg-accent" onClick={() => sigma.getCamera().animatedUnzoom({ duration: 200 })}><ZoomOut className="h-3.5 w-3.5" /></button>
     <button type="button" className="rounded border bg-background/90 p-1.5 shadow-sm hover:bg-accent" onClick={() => sigma.getCamera().animatedReset({ duration: 300 })}><Maximize className="h-3.5 w-3.5" /></button>
   </div>
-}
-
-function EntityDetails({ entity, graph, onOpenEvidence }: { entity: EntityModel; graph: KnowledgeGraphModel; onOpenEvidence: (nodeId: string) => Promise<void> }) {
-  const related = graph.relations.filter((relation) => relation.sourceId === entity.id || relation.targetId === entity.id)
-  return <section>
-    <h2 className="text-base font-semibold">{entity.name}</h2>
-    <p className="mt-1 text-xs text-muted-foreground">{entity.type} · {related.length} 条关系</p>
-    {Object.entries(entity.attributes).map(([key, values]) => <div key={key} className="mt-3 text-sm"><div className="text-xs font-medium text-muted-foreground">{key}</div><div className="mt-1 whitespace-pre-wrap break-words">{Array.isArray(values) ? values.join("，") : String(values)}</div></div>)}
-    <div className="mt-5 border-t pt-3 text-xs font-medium text-muted-foreground">来源证据</div>
-    {related.flatMap((relation) => relation.evidence).slice(0, 8).map((evidence) => <button key={`${evidence.nodeId}:${evidence.nodeReleaseId}`} type="button" onClick={() => { void onOpenEvidence(evidence.nodeId) }} className="mt-2 block w-full rounded border p-2 text-left text-xs hover:bg-accent"><span className="line-clamp-3">{evidence.excerpt || "打开来源文档"}</span></button>)}
-    {related.length === 0 && <p className="mt-2 text-sm text-muted-foreground">该节点暂无可见关系。</p>}
-  </section>
 }
 
 function RemoteGraphState({ message, error = false }: { message: string; error?: boolean }) {

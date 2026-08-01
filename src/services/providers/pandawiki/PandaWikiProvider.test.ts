@@ -129,11 +129,15 @@ describe("PandaWiki authentication provider", () => {
 
   it("maps graph data through the server-only graph provider boundary", async () => {
     const gateway = createGateway()
+    gateway.getKnowledgeGraph = vi.fn(async () => ({
+      entities: [{ id: "entity-1", name: "Intentional system", type: "concept", summary: "A permission-filtered server summary.", attributes: {} }],
+      relations: [],
+    }))
     const provider = createPandaWikiProvider({ baseUrl: "https://wiki.example", createGateway: async () => gateway })
 
     await expect(provider.graph.getGraph("kb-1")).resolves.toEqual({
       schema: { version: 1, fields: [], navigation: [] },
-      entities: [],
+      entities: [{ id: "entity-1", name: "Intentional system", type: "concept", summary: "A permission-filtered server summary.", attributes: {} }],
       relations: [],
     })
     expect(gateway.getKnowledgeGraph).toHaveBeenCalledWith("kb-1")

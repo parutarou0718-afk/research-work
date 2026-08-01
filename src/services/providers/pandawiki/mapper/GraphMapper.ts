@@ -2,7 +2,7 @@ import type { EntityModel, KnowledgeGraphModel, KnowledgeSchemaModel, RelationMo
 import type { EntityDTO, KnowledgeGraphDTO, KnowledgeSchemaDTO, RelationDTO } from "../dto/GraphDTO"
 
 export function mapEntityDto(dto: EntityDTO): EntityModel {
-  return { id: dto.id, name: dto.name, type: dto.type, attributes: dto.attributes ?? {} }
+  return { id: dto.id, name: dto.name, type: dto.type, summary: dto.summary, attributes: dto.attributes ?? {} }
 }
 
 export function mapRelationDto(dto: RelationDTO): RelationModel {
