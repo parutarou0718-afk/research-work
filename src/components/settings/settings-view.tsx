@@ -47,6 +47,7 @@ import { MaintenanceSection } from "./sections/maintenance-section"
 import { AboutSection } from "./sections/about-section"
 import { PluginsSection } from "./sections/plugins-section"
 import { PandaWikiChatSection } from "./sections/pandawiki-chat-section"
+import { PluginExportSection } from "./sections/plugin-export-section"
 import { isPandaWikiChatSettingsAvailable } from "@/lib/project-capabilities"
 
 type CategoryId =
@@ -66,6 +67,7 @@ type CategoryId =
   | "changelog"
   | "about"
   | "plugins"
+  | "plugin-export"
   | "pandawiki-chat"
 
 interface Category {
@@ -94,6 +96,7 @@ const CATEGORIES: Category[] = [
   { id: "changelog", labelKey: "settings.categories.changelog", icon: History },
   { id: "about", labelKey: "settings.categories.about", icon: Info },
   { id: "plugins", labelKey: "settings.categories.plugins", icon: Puzzle },
+  { id: "plugin-export", labelKey: "Plugin exports", icon: FileText },
   { id: "pandawiki-chat", labelKey: "PandaWiki chat", icon: Server },
 ]
 
@@ -662,6 +665,8 @@ export function SettingsView() {
         return <AboutSection />
       case "plugins":
         return <PluginsSection />
+      case "plugin-export":
+        return <PluginExportSection />
       case "pandawiki-chat":
         return <PandaWikiChatSection />
     }
@@ -732,7 +737,7 @@ export function SettingsView() {
         {/* Global Save bar hidden for sections that persist inline:
             - "llm" saves per-row on every edit (independent per-preset state)
             - "about" has no draft-bound fields */}
-        {active !== "about" && active !== "llm" && active !== "plugins" && active !== "pandawiki-chat" && (
+        {active !== "about" && active !== "llm" && active !== "plugins" && active !== "plugin-export" && active !== "pandawiki-chat" && (
           <div className="shrink-0 border-t bg-background/80 backdrop-blur px-8 py-3">
             <div className="mx-auto flex max-w-2xl items-center justify-between gap-4">
               <p className={`text-xs ${saveError ? "text-destructive" : "text-muted-foreground"}`}>

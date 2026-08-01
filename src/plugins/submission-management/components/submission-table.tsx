@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next"
 import { Button } from "@/components/ui/button"
+import { Download } from "lucide-react"
 import type { Submission } from "../domain/submission"
 import { isSubmissionOverdue, submissionStatusLabelKey } from "./submission-view-model"
 import { SubmissionStatusBadge } from "./submission-status-badge"
@@ -12,10 +13,12 @@ export function SubmissionTable({
   items,
   onEdit,
   onDelete,
+  onExport,
 }: {
   items: Submission[]
   onEdit: (submission: Submission) => void
   onDelete: (submission: Submission) => void
+  onExport: (submission: Submission) => void
 }) {
   const { t } = useTranslation()
   return (
@@ -60,6 +63,9 @@ export function SubmissionTable({
                   <td className="px-3 py-2">{new Date(item.updatedAt).toISOString().slice(0, 10)}</td>
                   <td className="px-3 py-2">
                     <div className="flex gap-1">
+                      <Button variant="outline" size="sm" onClick={() => onExport(item)} title="Export">
+                        <Download className="h-3.5 w-3.5" />
+                      </Button>
                       <Button variant="outline" size="sm" onClick={() => onEdit(item)}>
                         {t("common.edit")}
                       </Button>

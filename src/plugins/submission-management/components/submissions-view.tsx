@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react"
 import { Plus } from "lucide-react"
+import { open } from "@tauri-apps/plugin-dialog"
 import { useTranslation } from "react-i18next"
 import { Button } from "@/components/ui/button"
 import { useSubmissionStore } from "../store/submission-store"
@@ -19,6 +20,9 @@ import { SubmissionFilters } from "./submission-filters"
 import { SubmissionTable } from "./submission-table"
 import { SubmissionFormDialog } from "./submission-form-dialog"
 import { shouldUseManualSubmissionReference } from "./submission-project-mode"
+import { buildSubmissionExport, submissionExportBaseName } from "../export/submission-export"
+import { loadPluginExportPreferences } from "@/core/plugins/export/preferences"
+import { writePluginExport } from "@/core/plugins/export/native"
 
 export function SubmissionsView({ host }: { host: PluginHost }) {
   const { t } = useTranslation()
@@ -101,6 +105,23 @@ export function SubmissionsView({ host }: { host: PluginHost }) {
     await deleteSubmission(submission.id)
   }
 
+  async function handleExport(submission: Submission) {
+    try {
+      const preferences = await loadPluginExportPreferences()
+      const directory = preferences.defaultDirectory || await open({ directory: true, multiple: false })
+      if (typeof directory !== "string") return
+      const files = await writePluginExport(buildSubmissionExport(submission), {
+        directory,
+        baseName: submissionExportBaseName(submission),
+        formats: preferences.formats,
+      })
+      window.alert(`Exported ${files.length} file(s).`)
+    } catch (error) {
+      console.error("[plugin-export] submission export failed", { name: error instanceof Error ? error.name : typeof error })
+      window.alert("Unable to export this submission. Check the export folder and format settings.")
+    }
+  }
+
   return (
     <div className="h-full overflow-y-auto px-8 py-6">
       <div className="mx-auto flex max-w-7xl flex-col gap-4">
@@ -144,7 +165,7 @@ export function SubmissionsView({ host }: { host: PluginHost }) {
             {t("submissions.empty.noMatches")}
           </div>
         ) : (
-          <SubmissionTable items={visibleItems} onEdit={openEditDialog} onDelete={handleDelete} />
+          <SubmissionTable items={visibleItems} onEdit={openEditDialog} onDelete={handleDelete} onExport={handleExport} />
         )}
 
         <SubmissionFormDialog
