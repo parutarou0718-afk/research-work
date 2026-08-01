@@ -10,7 +10,7 @@ export function mapPluginRecordDto(dto: PluginRecordDTO): PluginRecordModel {
     payload: dto.payload,
     access: {
       visibility: dto.access.visibility,
-      sharedAuthGroupIds: dto.access.shared_auth_group_ids,
+    sharedGroupIds: dto.access.shared_group_ids,
       allowCollaborativeEdit: dto.access.allow_collaborative_edit,
     },
     createdAt: dto.created_at,
@@ -26,7 +26,7 @@ export function mapPluginRecordInput(input: PluginRecordInput): PluginRecordWrit
     payload: input.payload,
     access: {
       visibility: input.access.visibility,
-      shared_auth_group_ids: input.access.sharedAuthGroupIds,
+      shared_group_ids: input.access.sharedGroupIds,
       allow_collaborative_edit: input.access.allowCollaborativeEdit,
     },
   }

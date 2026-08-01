@@ -2,7 +2,7 @@ export type PluginRecordVisibility = "private" | "knowledge_base" | "groups"
 
 export interface PluginRecordAccess {
   visibility: PluginRecordVisibility
-  sharedAuthGroupIds: number[]
+  sharedGroupIds: number[]
   allowCollaborativeEdit: boolean
 }
 

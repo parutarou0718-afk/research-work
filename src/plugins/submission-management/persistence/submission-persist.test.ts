@@ -150,7 +150,7 @@ describe("submission plugin persistence", () => {
         pluginId: "official.submission-management",
         recordType: "submission",
         payload: expect.objectContaining({ id: "remote-submission" }),
-        access: { visibility: "private", sharedAuthGroupIds: [], allowCollaborativeEdit: false },
+        access: { visibility: "private", sharedGroupIds: [], allowCollaborativeEdit: false },
       }),
     ])
     await expect(loadSubmissions()).resolves.toEqual([makeSubmission({ id: "remote-submission" })])

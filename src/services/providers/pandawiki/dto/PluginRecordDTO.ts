@@ -2,7 +2,7 @@ export type PluginRecordVisibilityDTO = "private" | "knowledge_base" | "groups"
 
 export interface PluginRecordAccessDTO {
   visibility: PluginRecordVisibilityDTO
-  shared_auth_group_ids: number[]
+  shared_group_ids: number[]
   allow_collaborative_edit: boolean
 }
 

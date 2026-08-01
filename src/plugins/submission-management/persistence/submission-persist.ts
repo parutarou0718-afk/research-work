@@ -122,7 +122,7 @@ export async function saveSubmissions(items: Submission[]): Promise<void> {
 }
 
 function defaultRemoteAccess(): PluginRecordAccess {
-  return { visibility: "private", sharedAuthGroupIds: [], allowCollaborativeEdit: false }
+  return { visibility: "private", sharedGroupIds: [], allowCollaborativeEdit: false }
 }
 
 function serializeSubmission(item: Submission): Record<string, unknown> {
