@@ -22,11 +22,12 @@ const remoteProject: PandaWikiVirtualProject = {
 }
 
 describe("industry workspace suites", () => {
-  it("preinstalls research, legal, and investment suites", () => {
+  it("preinstalls research, legal, investment, and business suites", () => {
     expect(WORKSPACE_SUITES.map((suite) => suite.id)).toEqual([
       "research",
       "legal",
       "investment",
+      "business",
     ])
   })
 

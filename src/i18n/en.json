@@ -1182,6 +1182,39 @@
       "other": "Other"
     }
   },
+  "workspaces": {
+    "suite": {
+      "research": { "name": "Research Workspace", "description": "Research projects, submissions, literature, timelines, and review reports." },
+      "legal": { "name": "Legal Workspace", "description": "Matters, contract review, evidence timelines, and legal opinions." },
+      "investment": { "name": "Investment Research Workspace", "description": "Companies, diligence, risk matrices, and investment reports." },
+      "business": { "name": "Business Workspace", "description": "Customers, client projects, sales follow-up, and enterprise knowledge." }
+    },
+    "projectHint": "Select a local project or PandaWiki knowledge base to begin.",
+    "noProject": "No project is selected.",
+    "workingWith": "Working with {{name}}.",
+    "returnHint": "Workspace records stay on this device. For PandaWiki projects, only your authorized materials are read from the server.",
+    "menu": {
+      "overview": { "label": "Overview", "description": "Review the current workspace." },
+      "projects": { "label": "Research projects", "description": "Track research goals, milestones, and materials." },
+      "submissions": { "label": "Submission management", "description": "Track papers and submission status." },
+      "literature": { "label": "Literature and authors", "description": "Record literature, authors, and reading notes." },
+      "documents": { "label": "Documents", "description": "Browse source materials." },
+      "search": { "label": "Search", "description": "Search the active knowledge base." },
+      "graph": { "label": "Knowledge graph", "description": "Explore knowledge relationships." },
+      "chat": { "label": "Knowledge chat", "description": "Ask questions over the active knowledge base." },
+      "matters": { "label": "Matters", "description": "Track matters, parties, and key documents." },
+      "contracts": { "label": "Contract review", "description": "Record review issues, clauses, and recommendations." },
+      "timeline": { "label": "Timeline", "description": "Organize dated facts, evidence, and milestones." },
+      "opinion": { "label": "Legal opinion report", "description": "Draft and export a structured legal opinion." },
+      "companies": { "label": "Companies and entities", "description": "Track companies, industries, and key contacts." },
+      "diligence": { "label": "Diligence items", "description": "Manage investigation tasks and evidence." },
+      "risks": { "label": "Risk matrix", "description": "Record risks, ratings, owners, and mitigations." },
+      "report": { "label": "Report", "description": "Draft and export a structured report." },
+      "customers": { "label": "Customers and projects", "description": "Organize customers, contacts, and client projects." },
+      "followups": { "label": "Sales follow-up", "description": "Track opportunities, next actions, and outcomes." },
+      "knowledge": { "label": "Enterprise knowledge", "description": "Capture reusable customer and business knowledge." }
+    }
+  },
   "time": {
     "justNow": "just now",
     "minutesAgo": "{{count}} min ago",

@@ -1,6 +1,7 @@
 import { createSubmissionManagementPlugin } from "@/plugins/submission-management"
 import {
   createInvestmentWorkspacePlugin,
+  createBusinessWorkspacePlugin,
   createLegalWorkspacePlugin,
   createResearchWorkspacePlugin,
 } from "@/plugins/industry-workspaces"
@@ -10,5 +11,6 @@ export const builtinPlugins: BuiltinPluginDefinition[] = [
   createResearchWorkspacePlugin,
   createLegalWorkspacePlugin,
   createInvestmentWorkspacePlugin,
+  createBusinessWorkspacePlugin,
   createSubmissionManagementPlugin,
 ]

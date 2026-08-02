@@ -13,7 +13,6 @@ export interface PandaWikiPluginProject {
   connectionId: string
   knowledgeBaseId: string
   scopeKey: string
-  knowledgeBaseId?: string
   capabilities?: import("@/domain/projects").ProjectCapabilities
 }
 

@@ -10,28 +10,31 @@ const host = {
 } as unknown as PluginHost
 
 describe("Industry Workspaces plugins", () => {
-  it("is preinstalled as three independently-addressable workspace routes", () => {
+  it("registers four independently-addressable workspaces that stay hidden until enabled", () => {
     const plugins = createIndustryWorkspacePlugins(host)
 
     expect(plugins.map((plugin) => plugin.manifest.id)).toEqual([
       "official.research-workspace",
       "official.legal-workspace",
       "official.investment-workspace",
+      "official.business-workspace",
     ])
     expect(plugins.flatMap((plugin) => plugin.navigationItems ?? []).map((item) => item.id)).toEqual([
       "research-workspace",
       "legal-workspace",
       "investment-workspace",
+      "business-workspace",
     ])
+    expect(plugins.every((plugin) => plugin.manifest.defaultEnabled === false)).toBe(true)
   })
 
-  it("renders all three installed suite choices", () => {
+  it("renders the research workspace with its integrated submission entry", () => {
     const plugins = createIndustryWorkspacePlugins(host)
     const markup = renderToStaticMarkup(<IndustryWorkspacesPage host={host} suiteId="research" />)
 
     expect(markup).toContain("Research Workspace")
     expect(markup).toContain("Submission management")
-    expect(plugins).toHaveLength(3)
+    expect(plugins).toHaveLength(4)
   })
 
   it("renders the workspace shell in Chinese when the UI language is Chinese", async () => {

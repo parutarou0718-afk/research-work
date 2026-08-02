@@ -1182,6 +1182,39 @@
       "other": "其他"
     }
   },
+  "workspaces": {
+    "suite": {
+      "research": { "name": "科研工作台", "description": "集中管理研究项目、投稿、文献、时间线和综述报告。" },
+      "legal": { "name": "法律工作台", "description": "集中管理案件事项、合同审查、证据时间线和法律意见。" },
+      "investment": { "name": "投研工作台", "description": "集中管理公司主体、尽调、风险矩阵和投研报告。" },
+      "business": { "name": "商业工作台", "description": "集中管理客户、客户项目、销售跟进和企业知识。" }
+    },
+    "projectHint": "请先选择一个本地项目或 PandaWiki 知识库。",
+    "noProject": "尚未选择项目。",
+    "workingWith": "当前项目：{{name}}。",
+    "returnHint": "工作台记录仅保存在本机。对于 PandaWiki 项目，只会读取服务器已授权的资料。",
+    "menu": {
+      "overview": { "label": "概览", "description": "查看当前工作台的概况。" },
+      "projects": { "label": "研究项目", "description": "管理研究目标、里程碑和关联资料。" },
+      "submissions": { "label": "投稿管理", "description": "管理论文与投稿状态。" },
+      "literature": { "label": "文献与作者", "description": "记录文献、作者和阅读笔记。" },
+      "documents": { "label": "文档资料", "description": "浏览项目资料。" },
+      "search": { "label": "知识检索", "description": "检索当前知识库。" },
+      "graph": { "label": "知识图谱", "description": "浏览知识之间的关系。" },
+      "chat": { "label": "知识问答", "description": "围绕当前知识库提问。" },
+      "matters": { "label": "案件与事项", "description": "管理事项、当事人和关键文档。" },
+      "contracts": { "label": "合同审查", "description": "记录审查问题、条款和建议。" },
+      "timeline": { "label": "时间线", "description": "按时间整理事实、证据与里程碑。" },
+      "opinion": { "label": "法律意见报告", "description": "编写并导出结构化法律意见。" },
+      "companies": { "label": "公司与主体", "description": "管理公司、行业和关键联系人。" },
+      "diligence": { "label": "尽调事项", "description": "管理调查任务与佐证材料。" },
+      "risks": { "label": "风险矩阵", "description": "记录风险、评级、负责人和缓释措施。" },
+      "report": { "label": "报告", "description": "编写并导出结构化报告。" },
+      "customers": { "label": "客户与项目", "description": "管理客户、联系人和客户项目。" },
+      "followups": { "label": "销售跟进", "description": "管理商机、下一步行动和结果。" },
+      "knowledge": { "label": "企业知识", "description": "沉淀可复用的客户与商业知识。" }
+    }
+  },
   "time": {
     "justNow": "刚刚",
     "minutesAgo": "{{count}} 分钟前",

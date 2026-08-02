@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { ArrowRight, BookOpen, Building2, CalendarDays, FileSearch, MessageSquareText, Network, Scale, Search, ShieldAlert, TrendingUp } from "lucide-react"
+import { ArrowRight, BookOpen, Building2, CalendarDays, ClipboardCheck, FileSearch, Handshake, MessageSquareText, Network, Scale, Search, ShieldAlert, TrendingUp } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import type { PluginPageProps } from "@/core/plugins/host/types"
 import { useWikiStore } from "@/stores/wiki-store"
@@ -9,7 +9,7 @@ import {
   type WorkspaceSuiteId,
 } from "./domain/workspace-suites"
 import { RemoteGraphSnapshot, type RemoteGraphSnapshotMode } from "./components/remote-graph-snapshot"
-import { LocalWorkspaceRecords } from "./components/local-workspace-records"
+import { WorkspaceRecords } from "./components/workspace-records"
 
 const ITEM_ICONS = {
   overview: BookOpen,
@@ -18,15 +18,25 @@ const ITEM_ICONS = {
   graph: Network,
   chat: MessageSquareText,
   submissions: FileSearch,
+  projects: ClipboardCheck,
+  literature: BookOpen,
+  report: FileSearch,
   matters: Scale,
+  contracts: FileSearch,
+  opinion: Scale,
   timeline: CalendarDays,
   companies: Building2,
+  diligence: ClipboardCheck,
   risks: ShieldAlert,
+  customers: Building2,
+  followups: Handshake,
+  knowledge: BookOpen,
 } as const
 
 export function IndustryWorkspacesPage({ host, graphProvider, suiteId }: PluginPageProps & { suiteId: WorkspaceSuiteId }) {
   const { t } = useTranslation()
   const [project, setProject] = useState(host.project.current())
+  const [activeModuleId, setActiveModuleId] = useState("overview")
   const suite = WORKSPACE_SUITES.find((candidate) => candidate.id === suiteId) ?? WORKSPACE_SUITES[0]
   const visibleItems = getVisibleSuiteMenuItems(suite, project)
 
@@ -38,6 +48,7 @@ export function IndustryWorkspacesPage({ host, graphProvider, suiteId }: PluginP
       return
     }
     if (item.route) useWikiStore.getState().setActivePluginRoute(item.route)
+    if (item.surface) setActiveModuleId(item.id)
   }
 
   return (
@@ -67,33 +78,56 @@ export function IndustryWorkspacesPage({ host, graphProvider, suiteId }: PluginP
           })}
         </div>
 
-        <WorkspaceDataSections suiteId={suite.id} graphProvider={graphProvider} project={project} host={host} />
+        <WorkspaceDataSections suiteId={suite.id} activeModuleId={activeModuleId} graphProvider={graphProvider} project={project} host={host} />
       </div>
     </section>
   )
 }
 
 function SuiteIcon({ suiteId }: { suiteId: WorkspaceSuiteId }) {
-  const Icon = suiteId === "research" ? BookOpen : suiteId === "legal" ? Scale : TrendingUp
+  const Icon = suiteId === "research" ? BookOpen : suiteId === "legal" ? Scale : suiteId === "investment" ? TrendingUp : Handshake
   return <div className="rounded-lg bg-primary/10 p-2.5 text-primary"><Icon className="h-6 w-6" /></div>
 }
 
-function WorkspaceDataSections({ suiteId, graphProvider, project, host }: {
+function WorkspaceDataSections({ suiteId, activeModuleId, graphProvider, project, host }: {
   suiteId: WorkspaceSuiteId
+  activeModuleId: string
   graphProvider: PluginPageProps["graphProvider"]
   project: ReturnType<PluginPageProps["host"]["project"]["current"]>
   host: PluginPageProps["host"]
 }) {
   if (!project) return <WorkspaceOverview projectName={null} />
-  if (project.source === "local") return <LocalWorkspaceRecords host={host} suiteId={suiteId} />
+  if (activeModuleId !== "overview") {
+    const module = WORKSPACE_SUITES.find((suite) => suite.id === suiteId)?.menu.find((item) => item.id === activeModuleId)
+    if (module?.surface && module.surface !== "overview") {
+      return <>
+        <WorkspaceRecords host={host} suiteId={suiteId} moduleId={activeModuleId} />
+        {project.source === "pandawiki" && <RemoteWorkspaceInsights suiteId={suiteId} moduleId={activeModuleId} graphProvider={graphProvider} project={project} />}
+      </>
+    }
+  }
+  if (project.source === "local") return <WorkspaceOverview projectName={project.name} />
   const modes = getSuiteGraphSnapshotModes(suiteId)
   if (modes.length === 0) return <WorkspaceOverview projectName={project.name} />
   return <div className="mt-6 grid gap-6 xl:grid-cols-2">{modes.map((mode) => <RemoteGraphSnapshot key={mode} graphProvider={graphProvider} project={project} mode={mode} />)}</div>
 }
 
-function getSuiteGraphSnapshotModes(suiteId: WorkspaceSuiteId): RemoteGraphSnapshotMode[] {
-  if (suiteId === "legal") return ["legal-matters", "legal-timeline"]
-  if (suiteId === "investment") return ["investment-companies", "investment-risks"]
+function RemoteWorkspaceInsights({ suiteId, moduleId, graphProvider, project }: {
+  suiteId: WorkspaceSuiteId
+  moduleId: string
+  graphProvider: PluginPageProps["graphProvider"]
+  project: Extract<ReturnType<PluginPageProps["host"]["project"]["current"]>, { source: "pandawiki" }>
+}) {
+  const modes = getSuiteGraphSnapshotModes(suiteId, moduleId)
+  if (modes.length === 0) return null
+  return <div className="mt-6 grid gap-6 xl:grid-cols-2">{modes.map((mode) => <RemoteGraphSnapshot key={mode} graphProvider={graphProvider} project={project} mode={mode} />)}</div>
+}
+
+function getSuiteGraphSnapshotModes(suiteId: WorkspaceSuiteId, moduleId?: string): RemoteGraphSnapshotMode[] {
+  if (suiteId === "legal" && (!moduleId || moduleId === "matters")) return ["legal-matters"]
+  if (suiteId === "legal" && moduleId === "timeline") return ["legal-timeline"]
+  if (suiteId === "investment" && (!moduleId || moduleId === "companies")) return ["investment-companies"]
+  if (suiteId === "investment" && moduleId === "risks") return ["investment-risks"]
   return []
 }
 

@@ -37,16 +37,27 @@ beforeEach(() => {
 })
 
 describe("official built-in plugins", () => {
-  it("registers three independent industry workspace icons and keeps submission management embedded", async () => {
+  it("keeps four industry workspace icons disabled until their extension is enabled", async () => {
     const registry = new PluginRegistry()
     const host = createTestHost()
     builtinPlugins.forEach((createPlugin) => registry.register(createPlugin(host)))
 
     expect(registry.isPluginEnabled("official.submission-management")).toBe(true)
+    expect(registry.getPluginNavigationItems()).not.toEqual(expect.arrayContaining([
+      "research-workspace",
+      "legal-workspace",
+      "investment-workspace",
+      "business-workspace",
+    ]))
+    await registry.enablePlugin("official.research-workspace")
+    await registry.enablePlugin("official.legal-workspace")
+    await registry.enablePlugin("official.investment-workspace")
+    await registry.enablePlugin("official.business-workspace")
     expect(registry.getPluginNavigationItems().map((item) => item.id)).toEqual(expect.arrayContaining([
       "research-workspace",
       "legal-workspace",
       "investment-workspace",
+      "business-workspace",
     ]))
     expect(registry.getPluginNavigationItems()).not.toEqual(expect.arrayContaining([
       expect.objectContaining({ id: "industry-workspaces" }),
