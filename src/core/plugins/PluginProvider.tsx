@@ -66,9 +66,7 @@ export function PluginProvider({ children }: { children: ReactNode }) {
       setVersion((current) => current + 1)
     },
     isPluginEnabled: (id) => registry.isPluginEnabled(id),
-    getPluginByRoute: (route) => registry.getEnabledPlugins().find((plugin) =>
-      (plugin.navigationItems ?? []).some((item) => item.route === route),
-    ),
+    getPluginByRoute: (route) => registry.getPluginByRoute(route),
     host,
   }), [host, registry, version])
 

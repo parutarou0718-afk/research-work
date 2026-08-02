@@ -3,6 +3,7 @@ import { PluginRegistry } from "./PluginRegistry"
 import type { LlmWikiPlugin } from "./types"
 
 const storageKey = "llm-wiki.enabled-plugins.v0.1"
+const appliedDefaultsStorageKey = "llm-wiki.applied-default-plugins.v0.1"
 
 function installStorage(): void {
   const values = new Map<string, string>()
@@ -63,6 +64,22 @@ describe("PluginRegistry", () => {
     const second = new PluginRegistry()
     second.register(item)
     expect(second.isPluginEnabled(item.manifest.id)).toBe(true)
+  })
+
+  it("enables a newly introduced default plugin once without re-enabling a user-disabled plugin", async () => {
+    localStorage.setItem(storageKey, JSON.stringify(["official.previous-plugin"]))
+    localStorage.setItem(appliedDefaultsStorageKey, JSON.stringify(["official.previous-plugin"]))
+
+    const first = new PluginRegistry()
+    first.register(plugin("official.industry-workspaces", true))
+
+    expect(first.isPluginEnabled("official.industry-workspaces")).toBe(true)
+
+    await first.disablePlugin("official.industry-workspaces")
+    const second = new PluginRegistry()
+    second.register(plugin("official.industry-workspaces", true))
+
+    expect(second.isPluginEnabled("official.industry-workspaces")).toBe(false)
   })
 
   it("runs activation and deactivation lifecycle hooks", async () => {

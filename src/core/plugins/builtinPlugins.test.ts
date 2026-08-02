@@ -37,20 +37,22 @@ beforeEach(() => {
 })
 
 describe("official built-in plugins", () => {
-  it("keeps submission management hidden until it is explicitly enabled", async () => {
+  it("registers three independent industry workspace icons and keeps submission management embedded", async () => {
     const registry = new PluginRegistry()
     const host = createTestHost()
     builtinPlugins.forEach((createPlugin) => registry.register(createPlugin(host)))
 
-    expect(registry.isPluginEnabled("official.submission-management")).toBe(false)
-    expect(registry.getPluginNavigationItems()).toEqual([])
-
-    await registry.enablePlugin("official.submission-management")
-    expect(registry.getPluginNavigationItems()).toMatchObject([
-      { id: "submission-management", route: "plugin:official.submission-management" },
-    ])
-
-    await registry.disablePlugin("official.submission-management")
-    expect(registry.getPluginNavigationItems()).toEqual([])
+    expect(registry.isPluginEnabled("official.submission-management")).toBe(true)
+    expect(registry.getPluginNavigationItems().map((item) => item.id)).toEqual(expect.arrayContaining([
+      "research-workspace",
+      "legal-workspace",
+      "investment-workspace",
+    ]))
+    expect(registry.getPluginNavigationItems()).not.toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: "industry-workspaces" }),
+      expect.objectContaining({ id: "submission-management" }),
+    ]))
+    expect(registry.getPluginByRoute("plugin:official.submission-management")?.manifest.id)
+      .toBe("official.submission-management")
   })
 })
